@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Builds
+dist
+.next
+out
+*.tsbuildinfo
+
+# Turbo
+.turbo
+
+# Local HTTPS dev certificates (next dev --experimental-https)
+certificates/
+*.pem
+
+# Env — ignore every .env variant (incl. .env.prod, .env.local) except the committed templates
+.env
+.env.*
+!.env.example
+
+# Supabase
+supabase/.branches
+supabase/.temp
+
+# Logs
+*.log
+npm-debug.log*
+
+# Claude / agent workspace
+.claude/
+
+# OS / editors
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Test / coverage
+coverage
+.vercel
+/packages/supabase/.temp
+/packages/supabase/.branches
+/supabase/
