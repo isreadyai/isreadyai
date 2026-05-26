@@ -1,0 +1,72 @@
+{
+  "$schema": "https://v2-9-18.turborepo.dev/schema.json",
+  "ui": "tui",
+  "globalDependencies": ["tsconfig.base.json", ".env"],
+  "globalEnv": ["NEXT_PUBLIC_*", "ENABLE_ADMIN_PREVIEW"],
+  "globalPassThroughEnv": [
+    "NODE_ENV",
+    "PORT",
+    "SUPABASE_*",
+    "DB_URL",
+    "CRON_SECRET",
+    "RESEND_API_KEY",
+    "EMAIL_FROM",
+    "ISREADYAI_DEV_API_KEY",
+    "BADGE_SIGNING_SECRET",
+    "AGENT_BROWSER_*",
+    "AI_GATEWAY_API_KEY",
+    "AI_GATEWAY_BASE_URL",
+    "SOLVE_MODEL",
+    "SOLVE_TOKEN_SECRET",
+    "SMART_AGENT_CHAT_MODEL",
+    "VERCEL_TOKEN",
+    "VERCEL_TEAM_ID",
+    "VERCEL_PROJECT_ID",
+    "VERCEL_OIDC_TOKEN",
+    "PROXY_RATE_LIMIT",
+    "PROXY_TOKEN_SECRET",
+    "SMART_DEEP_PAGE_LIMIT",
+    "SMART_DEEP_CONCURRENCY",
+    "FIX_PLAN_MODEL",
+    "STRIPE_*"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+    },
+    "clean": {
+      "cache": false
+    },
+    "dev": {
+      "dependsOn": ["@isreadyai/supabase#start"],
+      "cache": false,
+      "persistent": true
+    },
+    "//#dev:webhook": {
+      "cache": false,
+      "persistent": true
+    },
+    "//#dev:cron": {
+      "cache": false,
+      "persistent": true
+    },
+    "start": {
+      "cache": false
+    },
+    "stop": {
+      "cache": false
+    },
+    "status": {
+      "cache": false
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "type-check": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    }
+  }
+}
