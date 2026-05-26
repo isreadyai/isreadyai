@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y", "nextjs"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "no-console": "off",
+    "no-await-in-loop": "off",
+    "typescript/no-explicit-any": "error",
+    "eqeqeq": "error",
+    "react/react-in-jsx-scope": "off"
+  },
+  "overrides": [
+    {
+      "files": [
+        "apps/web/components/github-showcase.tsx",
+        "apps/web/components/report/report-view.tsx"
+      ],
+      "rules": {
+        "nextjs/no-img-element": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist", ".next", "node_modules", "**/*.gen.ts"]
+}
