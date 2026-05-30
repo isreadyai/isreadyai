@@ -1,0 +1,36 @@
+{
+  "name": "isreadyai",
+  "version": "0.1.0",
+  "description": "Check if your website is ready for AI — LLM crawlability & AI-SEO audit from your terminal",
+  "homepage": "https://isready.ai",
+  "license": "MIT",
+  "author": "Smart Squad S.r.l. (https://smartsquad.io)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isreadyai/isreadyai.git",
+    "directory": "apps/cli"
+  },
+  "bin": {
+    "isready": "./dist/index.js",
+    "isreadyai": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "clean": "rm -rf .turbo .next .expo dist coverage *.tsbuildinfo",
+    "test": "bun test",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@clack/prompts": "^1.5.1",
+    "@isreadyai/scanner": "workspace:*",
+    "@types/bun": "^1.3.14",
+    "typescript": "~6.0.3"
+  }
+}
