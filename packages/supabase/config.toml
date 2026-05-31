@@ -1,0 +1,116 @@
+# Supabase local-development configuration for isready.ai.
+# Reference: https://supabase.com/docs/guides/local-development/cli/config
+# Ports use the 593xx range to avoid clashing with other local Supabase stacks.
+project_id = "isreadyai"
+
+[api]
+enabled = true
+port = 59321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[api.tls]
+enabled = false
+
+[db]
+port = 59322
+shadow_port = 59320
+major_version = 17
+
+[db.pooler]
+enabled = false
+port = 59329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[db.migrations]
+enabled = true
+schema_paths = ["./migrations/*.sql"]
+
+[db.seed]
+enabled = true
+sql_paths = ["./seeds/*.sql"]
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 59323
+api_url = "http://127.0.0.1"
+
+[local_smtp]
+enabled = true
+port = 59324
+
+[storage]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "https://localhost:3300"
+additional_redirect_urls = [
+  "https://localhost:3300/auth/callback",
+  "http://localhost:3300/auth/callback",
+  "https://isready.ai/auth/callback",
+]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+# Every visitor gets an anonymous session; the checkout flow upgrades it to a
+# permanent account (updateUser with email) so guest scans are preserved.
+enable_anonymous_sign_ins = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+# Branded, responsive auth emails — the HTML mirrors the app's transactional
+# shell (apps/web/lib/email.ts). content_path resolves against the Supabase
+# workdir (the monorepo's packages/ dir), hence the ./supabase/ prefix; the
+# hosted dashboard needs the same HTML pasted into its email templates.
+[auth.email.template.magic_link]
+subject = "Your isready.ai sign-in link"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your new isready.ai email"
+content_path = "./supabase/templates/email-change.html"
+
+# Cloudflare Turnstile bot protection. Local uses Cloudflare's documented
+# "always passes" test secret; production sets the real secret in the hosted
+# Supabase dashboard and NEXT_PUBLIC_TURNSTILE_SITE_KEY on the web app.
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+secret = "1x0000000000000000000000000000000AA"
+
+# Social OAuth (Fase 1b — active). Providers stay enabled with empty env so
+# `supabase start` succeeds; pasting the credentials in .env/.env.local (local)
+# or the hosted Supabase dashboard (production) switches them on. See the
+# internal OAuth setup doc. Local provider callback: http://127.0.0.1:59321/auth/v1/callback.
+[auth.external.github]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GITHUB_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GITHUB_SECRET)"
+
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+
+# X — the NEW OAuth 2.0 provider (key `x`); the legacy `twitter` (OAuth 1.0a) is
+# deprecated. client_id/secret are the X app's OAuth 2.0 Client ID and Secret
+# (X Developer Portal → your app → User authentication settings), not the
+# OAuth 1.0a API Key/Secret.
+[auth.external.x]
+enabled = true
+client_id = "env(SUPABASE_AUTH_X_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_X_SECRET)"
+
+[analytics]
+enabled = false

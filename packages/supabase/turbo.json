@@ -1,0 +1,19 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "supabase": { "cache": false, "persistent": false },
+    "start": { "cache": false, "persistent": false },
+    "stop": { "cache": false, "persistent": false },
+    "status": { "cache": false, "persistent": false },
+    "generate:types:local": {
+      "cache": false,
+      "outputs": ["src/database.types.ts"]
+    },
+    "generate:types:remote": {
+      "cache": false,
+      "outputs": ["src/database.types.ts"]
+    },
+    "deploy:remote": { "cache": false, "persistent": false },
+    "deploy:remote:dry-run": { "cache": false, "persistent": false }
+  }
+}
