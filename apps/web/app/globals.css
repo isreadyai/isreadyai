@@ -1,0 +1,199 @@
+@import 'tailwindcss';
+@import '@heroui/styles';
+
+@theme {
+  --color-site-background: oklch(0.145 0.004 100);
+  --color-site-surface: oklch(0.185 0.005 100);
+  --color-site-raised: oklch(0.225 0.006 100);
+  --color-site-border: oklch(0.3 0.006 100);
+  --color-site-text: oklch(0.93 0.004 100);
+  --color-site-muted: oklch(0.62 0.008 100);
+  --color-site-faint: oklch(0.45 0.008 100);
+
+  --color-site-accent: oklch(0.85 0.21 130);
+  --color-site-accent-dim: oklch(0.55 0.14 130);
+  --color-site-accent-foreground: oklch(0.15 0.02 130);
+
+  --color-site-secondary: #0076a2;
+  --color-site-secondary-dim: #005a7d;
+  --color-site-secondary-foreground: #ffffff;
+
+  --color-score-excellent: oklch(0.8 0.19 145);
+  --color-score-good: oklch(0.8 0.13 220);
+  --color-score-moderate: oklch(0.82 0.16 85);
+  --color-score-poor: oklch(0.66 0.21 25);
+
+  --color-danger: oklch(0.66 0.21 25);
+  --color-warning: oklch(0.82 0.16 85);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+  accent-color: var(--color-site-accent);
+  --accent: var(--color-site-accent);
+  --accent-foreground: var(--color-site-accent-foreground);
+  --focus: var(--color-site-accent);
+  --ring: var(--color-site-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-site-accent) !important;
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+[data-focus-visible='true'],
+[data-focused='true'] {
+  outline-color: var(--color-site-accent) !important;
+  border-color: var(--color-site-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-site-accent) !important;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Unify card geometry. HeroUI's <Card> defaults to a 3xl radius, but every
+   hand-rolled panel (tables, meters, report blocks) and their loading
+   skeletons use 2xl — pin the Card to match so corners never disagree. */
+.card {
+  border-radius: var(--radius-2xl);
+}
+
+body {
+  background: var(--color-site-background);
+  color: var(--color-site-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Safety net against rogue horizontal overflow on mobile. `clip` (not hidden)
+     so it never establishes a scroll container that would break position:sticky. */
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--color-site-accent);
+  color: var(--color-site-accent-foreground);
+}
+
+/* Falling "code rain" for the 404/500 screens — pure CSS, one keyframe. */
+@keyframes code-rain-fall {
+  from {
+    transform: translateY(-15vh);
+  }
+  to {
+    transform: translateY(115vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .code-rain-glyph {
+    animation: none !important;
+  }
+}
+
+.site-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 72rem;
+  padding-inline: clamp(1.25rem, 4vw, 3rem);
+}
+
+.text-gradient-accent {
+  background: linear-gradient(
+    100deg,
+    var(--color-site-text) 35%,
+    var(--color-site-accent) 50%,
+    var(--color-site-text) 65%
+  );
+  background-size: 250% 100%;
+  background-position: 50% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.bg-grid-faint {
+  background-image: radial-gradient(circle, var(--color-site-border) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, black 30%, transparent 75%);
+  pointer-events: none;
+}
+
+@keyframes hero-rise {
+  from {
+    transform: translateY(16px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.hero-rise {
+  animation: hero-rise 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise {
+    animation: none;
+  }
+}
+
+/* "How it works" step micro-animations — each rests at its identity state, so the
+   global reduced-motion rule (duration → 0.01ms) leaves them visually static. */
+@keyframes step-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(2.5px);
+  }
+}
+@keyframes step-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+@keyframes step-flow {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateX(3px);
+    opacity: 0.9;
+  }
+}
+.step-anim-bob {
+  animation: step-bob 2.4s ease-in-out infinite;
+}
+.step-anim-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: step-pulse 2.6s ease-in-out infinite;
+}
+.step-flow {
+  animation: step-flow 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
