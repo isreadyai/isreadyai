@@ -1,0 +1,38 @@
+{
+  "name": "@isreadyai/supabase",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed Supabase client, generated database types, and local Supabase infrastructure for isready.ai.",
+  "license": "LicenseRef-PolyForm-Shield-1.0.0",
+  "author": "Smart Squad S.r.l. (https://smartsquad.io)",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/database.types.ts"
+  },
+  "scripts": {
+    "supabase": "supabase",
+    "clean": "rm -rf .turbo .next .expo dist coverage *.tsbuildinfo",
+    "start": "supabase start",
+    "stop": "supabase stop",
+    "reset": "supabase db reset",
+    "test": "supabase db test",
+    "status": "supabase status",
+    "deploy:remote": "supabase db push --db-url \"$DB_URL\" --yes",
+    "deploy:remote:dry-run": "supabase db push --db-url \"$DB_URL\" --dry-run",
+    "generate:types:local": "./scripts/generate-types.sh local",
+    "generate:types:remote": "./scripts/generate-types.sh remote",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "oxfmt": "^0.54.0",
+    "supabase": "^2.106.0",
+    "typescript": "~6.0.3"
+  }
+}
