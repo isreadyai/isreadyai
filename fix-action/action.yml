@@ -1,0 +1,144 @@
+name: 'isreadyai — AI readiness fix PR'
+description: >-
+  Scans a URL, then runs an isready.ai AI agent INSIDE this runner that reads
+  your repo and applies AI-readiness fixes, and opens a pull request. The agent
+  runs locally with a short-lived metered token — your source is never stored by
+  isready.ai. Requires a Pro or Team isreadyai API key.
+author: 'Smart Squad S.r.l. (https://smartsquad.io)'
+branding:
+  icon: 'git-pull-request'
+  color: 'green'
+
+inputs:
+  url:
+    description: 'URL to audit (e.g. the production or preview deployment)'
+    required: true
+  api-key:
+    description: 'isready.ai API key, Pro or Team (store it as a repo secret)'
+    required: true
+  api-url:
+    description: 'isready.ai API origin (override for self-hosted deployments)'
+    required: false
+    default: 'https://isready.ai'
+  branch:
+    description: 'Branch name for the fix PR'
+    required: false
+    default: 'isready/ai-readiness-fixes'
+  dry-run:
+    description: 'Apply edits and print the summary without opening a PR'
+    required: false
+    default: 'false'
+
+outputs:
+  patches:
+    description: 'Number of files the agent changed'
+    value: ${{ steps.solve.outputs.patches }}
+  pr-url:
+    description: 'URL of the opened pull request (empty when none)'
+    value: ${{ steps.pr.outputs.pr-url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      with:
+        bun-version: 1.3.14
+
+    - name: Install scanner
+      shell: bash
+      working-directory: ${{ github.action_path }}/..
+      run: bun install --frozen-lockfile
+
+    - name: Scan
+      shell: bash
+      working-directory: ${{ github.action_path }}/..
+      env:
+        SCAN_URL: ${{ inputs.url }}
+        REPORT_PATH: ${{ runner.temp }}/report.json
+      run: |
+        set -euo pipefail
+        bun apps/cli/src/index.ts "$SCAN_URL" --deep --json > "$REPORT_PATH" || true
+        if ! grep -q '"overall"' "$REPORT_PATH"; then
+          echo "::error::isreadyai scan failed — site unreachable?"
+          exit 1
+        fi
+
+    - name: Solve (AI agent in-runner)
+      id: solve
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        ISREADYAI_API_KEY: ${{ inputs.api-key }}
+        ISREADYAI_API_URL: ${{ inputs.api-url }}
+        REPORT_PATH: ${{ runner.temp }}/report.json
+        FIX_DIR: ${{ runner.temp }}/isready-fix
+        TOKEN_FILE: ${{ runner.temp }}/solve-token.json
+        SOLVE_SCRIPT: ${{ github.action_path }}/solve.ts
+      run: |
+        set -euo pipefail
+        # Mint a short-lived, inference-scoped token. The real gateway key stays
+        # on isready.ai; the agent below only ever sees this ephemeral token.
+        HTTP=$(curl -s -o "$TOKEN_FILE" -w "%{http_code}" -X POST "$ISREADYAI_API_URL/api/solve-token" \
+          -H "authorization: Bearer $ISREADYAI_API_KEY" \
+          -H "content-type: application/json" \
+          -d "{\"repo\":\"${GITHUB_REPOSITORY:-unknown}\"}")
+        if [ "$HTTP" = "403" ]; then
+          echo "::error::the fix agent requires a Pro or Team plan"
+          exit 1
+        fi
+        if [ "$HTTP" != "200" ]; then
+          echo "::error::could not mint solve token (HTTP $HTTP)"
+          exit 1
+        fi
+        SOLVE_TOKEN=$(bun -e "const r=await Bun.file(process.env.TOKEN_FILE).json();console.log(r.token)")
+        SOLVE_BASE_URL=$(bun -e "const r=await Bun.file(process.env.TOKEN_FILE).json();console.log(r.baseUrl)")
+        echo "::add-mask::$SOLVE_TOKEN"
+        rm -f "$TOKEN_FILE"
+        SOLVE_TOKEN="$SOLVE_TOKEN" SOLVE_BASE_URL="$SOLVE_BASE_URL" \
+          REPORT_PATH="$REPORT_PATH" FIX_DIR="$FIX_DIR" \
+          bun "$SOLVE_SCRIPT"
+
+    - name: AI fix plan (job summary + PR body)
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        ISREADYAI_API_KEY: ${{ inputs.api-key }}
+        ISREADYAI_API_URL: ${{ inputs.api-url }}
+        REPORT_PATH: ${{ runner.temp }}/report.json
+        FIX_DIR: ${{ runner.temp }}/isready-fix
+        PLAN_SCRIPT: ${{ github.action_path }}/plan.ts
+      run: bun "$PLAN_SCRIPT" || true
+
+    - name: Open pull request
+      id: pr
+      if: steps.solve.outputs.patches != '0' && inputs.dry-run != 'true'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        BRANCH: ${{ inputs.branch }}
+        FIX_DIR: ${{ runner.temp }}/isready-fix
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        git config user.name "isready-bot"
+        git config user.email "bot@isready.ai"
+        git checkout -B "$BRANCH"
+        # Stage ONLY the files the agent reported changing (NUL-delimited list it
+        # wrote), never `git add -A`. The repo source the agent read is untrusted,
+        # so a stray write outside this set must never be staged, committed or
+        # pushed — the push runs git hooks with GH_TOKEN in env.
+        if [ ! -s "$FIX_DIR/changed.list" ]; then
+          echo "::error::no changed-file manifest from the fix agent"
+          exit 1
+        fi
+        git add --pathspec-from-file="$FIX_DIR/changed.list" --pathspec-file-nul
+        git commit -m "fix: improve AI readiness (isready.ai)"
+        git push -u origin "$BRANCH" --force-with-lease
+        PR_URL=$(gh pr create \
+          --title "Improve AI readiness — isready.ai fixes" \
+          --body-file "$FIX_DIR/pr-body.md" \
+          --head "$BRANCH" \
+          2>/dev/null || gh pr view "$BRANCH" --json url --jq .url)
+        echo "pr-url=$PR_URL" >> "$GITHUB_OUTPUT"
+        echo "Opened $PR_URL"
