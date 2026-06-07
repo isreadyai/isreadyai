@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/scan-domains",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/weekly-report",
+      "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/cron/cleanup-anonymous",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}
