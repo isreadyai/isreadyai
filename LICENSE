@@ -1,0 +1,41 @@
+# Licensing
+
+Copyright (c) 2026 Smart Squad S.r.l. (https://smartsquad.io)
+
+This repository contains two parts under two different licenses. Each
+directory ships its own `LICENSE` file with the full, authoritative terms.
+
+## Open engine — MIT
+
+- `packages/scanner`
+- `apps/cli`
+
+The audit engine and the command-line interface are open source under the
+MIT License. See [`packages/scanner/LICENSE`](./packages/scanner/LICENSE) and
+[`apps/cli/LICENSE`](./apps/cli/LICENSE).
+
+## Dashboard — PolyForm Shield 1.0.0 (source-available, no-compete)
+
+- `apps/web`
+- `packages/supabase`
+
+The hosted dashboard and its Supabase layer are © Smart Squad S.r.l. and are
+made available under the PolyForm Shield License 1.0.0 — source-available, but
+not open source: you may not use them to provide a product that competes with
+isready.ai. See [`apps/web/LICENSE`](./apps/web/LICENSE) and
+[`packages/supabase/LICENSE`](./packages/supabase/LICENSE), and the root
+[`NOTICE`](./NOTICE).
+
+When in doubt about which terms apply to a given file, the `LICENSE` in the
+nearest parent directory governs.
+
+## Changes to licensing
+
+Smart Squad S.r.l. reserves the right, at its sole discretion and to the extent
+permitted by applicable law, to change the terms under which it makes future
+versions of isready.ai available — including moving components between the open
+(MIT) and source-available (PolyForm Shield) parts, or adopting different
+license terms. Any such change applies only from the version in which it is
+introduced onward: copies and versions already released under a given license
+remain governed by the license that applied to them at the time of their
+release and are not retroactively revoked.

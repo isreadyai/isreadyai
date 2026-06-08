@@ -1,0 +1,32 @@
+isready.ai
+Copyright (c) 2026 Smart Squad S.r.l. (https://smartsquad.io)
+
+All intellectual property in this repository is owned by Smart Squad S.r.l.
+
+This product is split across two licenses:
+
+  * Open engine (MIT)
+      - packages/scanner
+      - apps/cli
+    The audit engine and CLI are open source under the MIT License.
+
+  * Dashboard (PolyForm Shield License 1.0.0 — source-available, no-compete)
+      - apps/web
+      - packages/supabase
+    © Smart Squad S.r.l. Source-available but not open source. You may not use
+    this part to provide a product that competes with isready.ai. See the
+    LICENSE file in each directory for the authoritative terms.
+
+The authoritative terms live in each directory's LICENSE file; this NOTICE is
+a summary and does not modify them.
+
+Licensor
+--------
+  Smart Squad S.r.l.
+  https://smartsquad.io
+  Sede legale: Via Villalta 38, 33100 Udine (UD), Italy
+  P.IVA / VAT: 02898170309 (IT02898170309) · REA: UD-296388 · PEC: smart.squad@pec.it
+
+Third-party open-source components are credited in:
+  - README.md (Acknowledgements)
+  - https://isready.ai/acknowledgements
