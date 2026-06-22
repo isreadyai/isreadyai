@@ -30,7 +30,10 @@
     "FIX_PLAN_MODEL",
     "STRIPE_*",
     "GA_MEASUREMENT_ID",
-    "GA_MP_API_SECRET"
+    "GA_MP_API_SECRET",
+    "TURNSTILE_SECRET_KEY",
+    "CLICKUP_API_TOKEN",
+    "CLICKUP_CONTACT_LIST_ID"
   ],
   "tasks": {
     "build": {
