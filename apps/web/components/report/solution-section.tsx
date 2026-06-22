@@ -33,14 +33,23 @@ export function SolutionSection({ report, premium }: { report: IScanReport; prem
     URL.revokeObjectURL(url)
   }
 
-  // Same shell as the "Download report" section: heading + hint + a right-aligned
-  // button row, no card — so the two read as a consistent pair.
   return (
     <section data-anim="panel" aria-label={t('solutionTitle')} className="mt-10">
-      <h2 className="text-lg font-semibold">{t('solutionTitle')}</h2>
-      <p className="text-site-muted mt-1 text-sm">
-        {premium ? t('solutionHint') : t('solutionLockedHint')}
-      </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">{t('solutionTitle')}</h2>
+          <p className="text-site-muted mt-1 text-sm">
+            {premium ? t('solutionHint') : t('solutionLockedHint')}
+          </p>
+        </div>
+        {/* No content for Free → upgrade CTA top-right beside the title. */}
+        {!premium ? (
+          <Button variant="secondary" href="/pricing" className="shrink-0">
+            {t('solutionUpsellCta')}
+          </Button>
+        ) : null}
+      </div>
+      {/* Premium has the action row + preview (content) → keep them below. */}
       {premium ? (
         <>
           <div className="mt-4 flex flex-wrap justify-end gap-2">
@@ -64,13 +73,7 @@ export function SolutionSection({ report, premium }: { report: IScanReport; prem
             </pre>
           ) : null}
         </>
-      ) : (
-        <div className="mt-4 flex justify-end">
-          <Button variant="secondary" href="/pricing">
-            {t('solutionUpsellCta')}
-          </Button>
-        </div>
-      )}
+      ) : null}
     </section>
   )
 }

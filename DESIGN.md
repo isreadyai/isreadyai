@@ -369,9 +369,15 @@ The implementation lives in `apps/web/components/dashboard`.
   **identity (title + URL/meta) on the left, actions on the right**
   (`flex sm:flex-row sm:items-center justify-between`). Re-use this shape across
   scan and website details so they're visually interchangeable.
-- **Section / page actions go bottom-right** of their card
-  (`flex justify-end`), not bottom-left. This is the single placement for a
-  card's primary CTA (e.g. _Manage subscription_) everywhere in the dashboard.
+- **Card CTA placement is content-aware.** A card with **body content** (a list,
+  a chart, controls, a generated plan) puts its primary action **bottom-right**
+  (`mt-auto flex justify-end`), not bottom-left — the single placement for e.g.
+  _Manage subscription_. A card that is **title + subtitle only** (a premium
+  **upsell** with nothing below it — e.g. the website-detail _Solution_ / _Badge_
+  cards for Free users) instead puts its CTA **top-right beside the title**
+  (`flex flex-wrap items-start justify-between gap-3`, button `shrink-0`). Every
+  upsell surface MUST follow this rule so they read coherently; see
+  `site-badge-embed.tsx` and `site-solution-card.tsx`.
 - **Everything actionable is a `Button`** — never a bare text link — including
   row actions like an invoice _View_. Destructive = `danger` (solid); primary
   action = `primary`; a Pro-gated control = `secondary` + `outline` (reads as an
