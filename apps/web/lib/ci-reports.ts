@@ -5,7 +5,8 @@ import { gradeOf, isGrade, isSiteReport } from '@isreadyai/scanner'
 import { requireSuccess } from '@/lib/db'
 import { combinedScoreFromRow, scanSummaryColumns } from '@/lib/score'
 import { isPaidPlan, planOrFree } from '@/lib/plans'
-import { hostOf } from '@/lib/url'
+import { SITE_URL } from '@/lib/site'
+import { hostOf, normalizeHost } from '@/lib/url'
 import { ownerPlanForWorkspace } from '@/lib/workspace'
 
 // MARK: - CI reports (the audit action's authenticated upload + repo badge)
@@ -40,6 +41,25 @@ export function assertRepoOwnership(
   if (existingUserId !== ownerUserId) {
     throw new CiRepoTakeoverError(repositoryId)
   }
+}
+
+// MARK: - Badge links
+
+export interface ICiBadgeLinks {
+  badgeUrl: string
+  reportUrl: string
+  badgeMarkdown: string
+}
+
+/**
+ * Badge image URL, report page URL, and the README markdown snippet for a
+ * repo's branch/commit — the single template shared by the upload response
+ * (route.ts) and the dashboard CI table (dashboard/ci/page.tsx).
+ */
+export function ciBadgeLinks(slug: string, branch: string, commit: string): ICiBadgeLinks {
+  const badgeUrl = `${SITE_URL}/badge/gh/${slug}/${encodeURIComponent(branch)}`
+  const reportUrl = `${SITE_URL}/report/gh/${slug}/${encodeURIComponent(commit)}`
+  return { badgeUrl, reportUrl, badgeMarkdown: `[![AI readiness](${badgeUrl})](${reportUrl})` }
 }
 
 export interface ICiUploadInput {
@@ -241,7 +261,7 @@ async function matchVerifiedWebsite(
   host: string,
   ownerUserId: string,
 ): Promise<IWebsiteLink | null> {
-  const normalized = host.toLowerCase().replace(/^www\./, '')
+  const normalized = normalizeHost(host)
   const { data: website } = await client
     .from('websites')
     .select('id, workspace_id, badge_enabled')

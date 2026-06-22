@@ -74,6 +74,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
         'id, url, status, created_at, report, smart_status, site_report, smart_report, smart_site_report',
       )
       .eq('workspace_id', ctx.workspaceId)
+      .eq('host', site.host)
       .order('created_at', { ascending: false }),
     supabase
       .from('monitoring_schedules')
@@ -92,25 +93,23 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
   const alertDelta = schedule?.alert_delta ?? 10
   const alertThreshold = schedule?.alert_threshold ?? null
 
-  const rows: IScanRow[] = (scanData ?? [])
-    .filter((scan) => hostOf(scan.url) === site.host)
-    .map((scan) => {
-      const report = isScanReport(scan.report) ? scan.report : null
-      const overall = combinedScoreFromRow(scan)
-      return {
-        id: scan.id,
-        host: hostOf(scan.url),
-        status: scan.status,
-        createdAt: scan.created_at,
-        overall,
-        grade: overall === null ? null : gradeOf(overall),
-        failed: report?.checks.filter((c) => c.status === 'fail').length ?? 0,
-        warned: report?.checks.filter((c) => c.status === 'warn').length ?? 0,
-        isDeep: isSiteReport(scan.site_report),
-        isSmart:
-          isSmartAgentReport(scan.smart_report) || isSmartAgentSiteReport(scan.smart_site_report),
-      }
-    })
+  const rows: IScanRow[] = (scanData ?? []).map((scan) => {
+    const report = isScanReport(scan.report) ? scan.report : null
+    const overall = combinedScoreFromRow(scan)
+    return {
+      id: scan.id,
+      host: hostOf(scan.url),
+      status: scan.status,
+      createdAt: scan.created_at,
+      overall,
+      grade: overall === null ? null : gradeOf(overall),
+      failed: report?.checks.filter((c) => c.status === 'fail').length ?? 0,
+      warned: report?.checks.filter((c) => c.status === 'warn').length ?? 0,
+      isDeep: isSiteReport(scan.site_report),
+      isSmart:
+        isSmartAgentReport(scan.smart_report) || isSmartAgentSiteReport(scan.smart_site_report),
+    }
+  })
 
   const latest = rows.find((r) => r.overall !== null) ?? null
   // Most recent completed scan drives the result card so it's identical to the

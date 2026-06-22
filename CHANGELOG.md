@@ -17,11 +17,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `badge` and `report-url` outputs alongside the existing `score` and `grade`.
 - The action sends an anonymous, PII-free usage ping (host + score); opt out with `TELEMETRY=false`.
 
+#### Web app (`apps/web`)
+
+- **Canonical host normalization** (`normalizeHost`): hosts are stored and compared lowercased with a single leading `www.` stripped — `www.x.com` and `x.com` are one site, while subdomains stay distinct (`massimo.deluisa.bio` ≠ `deluisa.bio`). Applied to add-website and CI badge matching.
+- **Monitoring cron de-duplicates by host**: a domain tracked by several workspaces is crawled (deep + Smart Agent) once per tick and the result fanned out to each website's scan row, instead of re-scanning the host per workspace.
+- Website-detail scan history filters on the indexed `scans.host` column instead of parsing every scan URL in JS.
+- Premium-upsell CTA placement is content-aware (top-right beside the title when the card is title-only, otherwise bottom-right); documented in `DESIGN.md`.
+
 ### Added
 
 #### GitHub Action — fix PR (`fix-action/action.yml`)
 
 - New action that scans a URL, runs an isready.ai AI agent **inside the runner** under a short-lived, metered, inference-scoped token (the real gateway key never leaves isready.ai; your source is never stored), applies AI-readiness fixes, and opens a pull request. Stages only the agent's reported changed files — never `git add -A`. Requires a Pro or Team API key.
+
+#### Web app (`apps/web`)
+
+- **My Websites scan inheritance**: adding a site claims your own past scans of that exact host (including anonymous, pre-signup ones); verifying ownership claims all still-unclaimed scans of the host (anonymous and others'), never touching scans already owned by another workspace.
+- GA4 server-side conversions via the Measurement Protocol — `purchase` (from the Stripe webhook, with the `_ga` client/session carried through Stripe metadata) and `sign_up` (from the auth callback); both consent-aware.
+- Cookie-consent banner (Consent Mode v2), footer Privacy / Terms / Sitemap links, and an expanded `sitemap.xml`.
+
+#### Supabase package (`@isreadyai/supabase`)
+
+- `scans.host` — a normalized, indexed generated column (`scans_host_idx`) used as the canonical key for host matching, scan inheritance and the website-detail history.
+
+### Fixed
+
+#### Scanner engine (`@isreadyai/scanner`)
+
+- `crawler.anti-bot` no longer false-positives on ordinary page content or the legitimate Turnstile widget — it flags only a real Cloudflare challenge (challenge-only markers or the interstitial `<title>`).
+
+#### Web app (`apps/web`)
+
+- `profiles` billing columns (`plan`, Stripe fields) are writable only by the service role: a `BEFORE UPDATE` trigger blocks any end-user session from changing them, even if a permissive policy is ever added.
+- GA env (`GA_MEASUREMENT_ID`, `GA_MP_API_SECRET`) is passed through Turbo so the server-side GA4 events fire in production.
 
 ## [0.1.0] - 2026-06-15
 
