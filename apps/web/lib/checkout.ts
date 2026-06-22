@@ -3,6 +3,7 @@ import { createServiceClient } from '@isreadyai/supabase'
 import type { TPaidPlan } from '@/lib/plans'
 import { SITE_URL } from '@/lib/site'
 import { getPriceId, getStripe, isStripeConfigured } from '@/lib/stripe'
+import type { IGaSession } from '@/lib/analytics-server'
 
 // MARK: - Checkout session helper
 
@@ -31,9 +32,8 @@ export async function startCheckout(
   userId: string,
   email: string | null,
   plan: TPaidPlan,
-  // Origin of the current request (e.g. http://localhost:3300) so the return
-  // URLs hit the right host/port instead of a hardcoded SITE_URL.
   origin?: string,
+  ga?: IGaSession | null,
 ): Promise<TStartCheckout> {
   const base = origin ?? SITE_URL
   const priceId = getPriceId(plan)
@@ -90,6 +90,12 @@ export async function startCheckout(
       // the price's currency_options already carry EUR/USD/GBP amounts.
       success_url: `${base}/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/dashboard/billing?checkout=cancelled`,
+      metadata: {
+        supabase_user_id: userId,
+        plan,
+        ga_client_id: ga?.clientId ?? '',
+        ga_session_id: ga?.sessionId ?? '',
+      },
       subscription_data: { metadata: { supabase_user_id: userId, plan } },
     },
     // Idempotent per (user, plan): a double-click or retry returns the same
