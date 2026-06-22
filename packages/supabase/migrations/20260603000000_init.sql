@@ -94,6 +94,29 @@ begin
 end;
 $$;
 
+CREATE FUNCTION public.guard_profile_billing() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+  -- Billing columns are owned by Stripe and only ever written by the webhook via
+  -- the service role. A user session must never change them — even if a permissive
+  -- UPDATE policy is one day added to profiles by mistake, this is the backstop.
+  if current_user in ('authenticated', 'anon') and (
+       new.plan is distinct from old.plan
+    or new.stripe_customer_id is distinct from old.stripe_customer_id
+    or new.stripe_subscription_id is distinct from old.stripe_subscription_id
+    or new.subscription_status is distinct from old.subscription_status
+    or new.subscription_current_period_end is distinct from old.subscription_current_period_end
+    or new.cancel_at_period_end is distinct from old.cancel_at_period_end
+    or new.payment_method_brand is distinct from old.payment_method_brand
+    or new.payment_method_last4 is distinct from old.payment_method_last4
+  ) then
+    raise exception 'profiles billing columns are managed by Stripe and cannot be changed directly';
+  end if;
+  return new;
+end;
+$$;
+
 CREATE FUNCTION public.handle_new_user() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
     AS $$
@@ -987,3 +1010,8 @@ GRANT SELECT(created_at) ON TABLE public.workspaces TO authenticated;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Stripe-owned billing columns on profiles can't be changed by a user session.
+create trigger guard_profile_billing
+  before update on public.profiles
+  for each row execute procedure public.guard_profile_billing();
