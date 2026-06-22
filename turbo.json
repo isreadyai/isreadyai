@@ -28,7 +28,9 @@
     "SMART_DEEP_PAGE_LIMIT",
     "SMART_DEEP_CONCURRENCY",
     "FIX_PLAN_MODEL",
-    "STRIPE_*"
+    "STRIPE_*",
+    "GA_MEASUREMENT_ID",
+    "GA_MP_API_SECRET"
   ],
   "tasks": {
     "build": {
