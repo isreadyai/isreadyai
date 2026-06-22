@@ -209,6 +209,12 @@ export function SiteDetailControls({
               <p className="text-site-muted mt-0.5 text-xs leading-relaxed">
                 {t('siteVerifyBannerBody')}
               </p>
+              <a
+                href={`/contact?reason=fraud&host=${encodeURIComponent(host)}`}
+                className="text-site-faint hover:text-site-text mt-1 inline-block text-xs underline underline-offset-2"
+              >
+                {t('siteReportFraud')}
+              </a>
             </div>
           </div>
           <Button

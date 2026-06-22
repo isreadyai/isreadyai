@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **My Websites scan inheritance**: adding a site claims your own past scans of that exact host (including anonymous, pre-signup ones); verifying ownership claims all still-unclaimed scans of the host (anonymous and others'), never touching scans already owned by another workspace.
 - GA4 server-side conversions via the Measurement Protocol — `purchase` (from the Stripe webhook, with the `_ga` client/session carried through Stripe metadata) and `sign_up` (from the auth callback); both consent-aware.
 - Cookie-consent banner (Consent Mode v2), footer Privacy / Terms / Sitemap links, and an expanded `sitemap.xml`.
+- **Contact / feedback page** (`/contact`, footer-linked) plus a **fraudulent-domain-claim report** (deep-linked from the website verify banner with the host pre-filled): submissions create a ClickUp task, protected by Turnstile + per-IP/global rate-limiting.
 
 #### Supabase package (`@isreadyai/supabase`)
 
