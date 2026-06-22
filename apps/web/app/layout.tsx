@@ -4,10 +4,11 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations } from 'next-intl/server'
+import { GoogleTagManager } from '@next/third-parties/google'
 import { ScrollToTopButton } from '@/components/scroll-to-top-button'
 import { Toaster } from '@/components/ui/toast'
 import { EnsureSession } from '@/components/auth/ensure-session'
-import { SITE_URL } from '@/lib/site'
+import { SITE_URL, GTM_ID } from '@/lib/site'
 import './globals.css'
 
 // MARK: - Metadata
@@ -67,6 +68,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
+      {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} /> : null}
       <body className="bg-site-background text-site-text min-h-dvh antialiased">
         <NextIntlClientProvider messages={messages}>
           <EnsureSession />
