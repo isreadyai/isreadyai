@@ -5,7 +5,7 @@ import { gradeOf, isGrade, isSiteReport } from '@isreadyai/scanner'
 import { requireSuccess } from '@/lib/db'
 import { combinedScoreFromRow, scanSummaryColumns } from '@/lib/score'
 import { isPaidPlan, planOrFree } from '@/lib/plans'
-import { hostOf } from '@/lib/url'
+import { hostOf, normalizeHost } from '@/lib/url'
 import { ownerPlanForWorkspace } from '@/lib/workspace'
 
 // MARK: - CI reports (the audit action's authenticated upload + repo badge)
@@ -241,7 +241,7 @@ async function matchVerifiedWebsite(
   host: string,
   ownerUserId: string,
 ): Promise<IWebsiteLink | null> {
-  const normalized = host.toLowerCase().replace(/^www\./, '')
+  const normalized = normalizeHost(host)
   const { data: website } = await client
     .from('websites')
     .select('id, workspace_id, badge_enabled')

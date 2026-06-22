@@ -9,6 +9,7 @@ import type { TActionResult } from '@/lib/action-result'
 import { checkQuota, resolveEntitlements } from '@/lib/entitlements'
 import type { TPlan } from '@/lib/plans'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { normalizeHost } from '@/lib/url'
 import {
   canEditWorkspace,
   getActiveWorkspaceId,
@@ -50,7 +51,7 @@ export async function addTrackedDomain(host: string): Promise<TAddDomainResult> 
   if (!validated.ok) {
     return { ok: false, error: 'invalid_domain' }
   }
-  const normalizedHost = new URL(validated.url).host
+  const normalizedHost = normalizeHost(validated.url)
 
   const workspaceId = await getActiveWorkspaceId(session, user.id)
   if (workspaceId === null) {
@@ -91,6 +92,16 @@ export async function addTrackedDomain(host: string): Promise<TAddDomainResult> 
     // unique(workspace_id, host) → the site is already tracked in this workspace.
     return { ok: false, error: 'already_tracked' }
   }
+
+  // Inherit the adder's OWN past scans of this exact host into the workspace, so
+  // their history (incl. anonymous pre-signup scans they ran) shows under the new
+  // site. Verifying ownership later claims everyone's scans of the host.
+  await service
+    .from('scans')
+    .update({ workspace_id: workspaceId, website_id: data?.id ?? null })
+    .eq('host', normalizedHost)
+    .is('workspace_id', null)
+    .eq('created_by', user.id)
 
   revalidatePath('/dashboard/websites')
   return { ok: true, id: data?.id ?? '' }
@@ -177,6 +188,16 @@ export async function verifyDomain(domainId: string): Promise<TActionResult> {
   if (error !== null) {
     return { ok: false, error: error.message }
   }
+
+  // Ownership proven → inherit ALL still-unclaimed scans of this exact host (incl.
+  // anonymous ones and ones run by others), never touching scans already owned by
+  // another workspace.
+  await auth.service
+    .from('scans')
+    .update({ workspace_id: auth.workspaceId, website_id: domainId })
+    .eq('host', normalizeHost(auth.website.host))
+    .is('workspace_id', null)
+
   revalidatePath('/dashboard/websites')
   return { ok: true }
 }

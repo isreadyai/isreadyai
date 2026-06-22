@@ -597,6 +597,7 @@ export type Database = {
           error: string | null
           has_deep: boolean
           has_smart: boolean
+          host: string | null
           id: string
           ip_hash: string | null
           overall_score: number | null
@@ -619,6 +620,7 @@ export type Database = {
           error?: string | null
           has_deep?: boolean
           has_smart?: boolean
+          host?: never
           id: string
           ip_hash?: string | null
           overall_score?: number | null
@@ -641,6 +643,7 @@ export type Database = {
           error?: string | null
           has_deep?: boolean
           has_smart?: boolean
+          host?: never
           id?: string
           ip_hash?: string | null
           overall_score?: number | null

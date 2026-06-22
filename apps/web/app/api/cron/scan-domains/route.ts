@@ -6,6 +6,7 @@ import { sendScoreDropEmail } from '@/lib/email-monitoring'
 import { materializeScanSummary } from '@/lib/scan-store'
 import { runWebSmartAgentAudit } from '@/lib/smart-agent/run-smart-agent'
 import { runWebSmartDeepAudit } from '@/lib/smart-agent/run-smart-deep'
+import { normalizeHost } from '@/lib/url'
 
 // MARK: - GET /api/cron/scan-domains — scheduled re-scans (the badge engine)
 
@@ -59,75 +60,55 @@ export async function GET(request: Request): Promise<Response> {
     .or(`next_run_at.is.null,next_run_at.lte.${nowIso}`)
     .limit(BATCH)
 
-  let ran = 0
+  // Group due schedules by canonical host: a host tracked by N workspaces is
+  // scanned ONCE per tick and the result fanned out to each website's row, so
+  // duplicates never trigger N expensive crawls.
+  const groups = new Map<string, { url: string; entries: IScheduleEntry[] }>()
   for (const schedule of due ?? []) {
-    if (Date.now() - startedMs > TIME_BUDGET_MS) {
-      break
-    }
-    const { data: domain } = await client
+    const { data: website } = await client
       .from('websites')
       .select('host, workspace_id, created_by')
       .eq('id', schedule.website_id)
       .maybeSingle()
-    if (domain === null) {
+    if (website === null) {
       continue
     }
+    const host = normalizeHost(website.host)
+    const group = groups.get(host) ?? { url: `https://${host}`, entries: [] }
+    group.entries.push({ schedule, website })
+    groups.set(host, group)
+  }
 
-    const deep = schedule.scan_mode === 'deep'
-    const smart = schedule.smart_agent_enabled !== false
+  let ran = 0
+  for (const [, group] of groups) {
+    if (Date.now() - startedMs > TIME_BUDGET_MS) {
+      break
+    }
+    // Union of the group's settings: crawl deep if ANY schedule wants deep, run
+    // Smart if ANY wants it — the heavy passes run once, stored per-schedule below.
+    const deep = group.entries.some((e) => e.schedule.scan_mode === 'deep')
+    const smart = group.entries.some((e) => e.schedule.smart_agent_enabled !== false)
     try {
-      const url = `https://${domain.host}`
-      const report = await scan(url, { checks: allChecks })
+      const report = await scan(group.url, { checks: allChecks })
       if (report.meta.fetchOk) {
-        // Capture the previous monitored score BEFORE inserting the new scan, so
-        // maybeAlert can detect a relative drop (not just an absolute threshold).
-        const { data: prevScan } = await client
-          .from('scans')
-          .select('report')
-          .eq('website_id', schedule.website_id)
-          .eq('status', 'done')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        const previousOverall = isScanReport(prevScan?.report) ? prevScan.report.overall : null
-
-        const scanId = crypto.randomUUID()
-        const { error } = await client.from('scans').insert({
-          id: scanId,
-          url,
-          status: 'done',
-          report: report as unknown as Json,
-          source: 'cron',
-          smart_status: smart ? 'queued' : 'disabled',
-          user_id: domain.created_by,
-          workspace_id: domain.workspace_id,
-          website_id: schedule.website_id,
-          created_at: new Date().toISOString(),
-        })
-        if (error === null) {
-          // Best-effort: a failed public_report_id update must not fail the domain scan.
-          await client
-            .from('websites')
-            .update({ public_report_id: scanId })
-            .eq('id', schedule.website_id)
-          await maybeAlert(client, schedule, domain, report, scanId, previousOverall)
-          await materializeScanSummary(client, scanId)
-          await runDeepAndSmart(client, scanId, url, report.finalUrl, { deep, smart })
-          // runDeepAndSmart wrote site/smart reports directly — refresh the summary.
-          await materializeScanSummary(client, scanId)
+        const heavy = await computeHeavy(group.url, report.finalUrl, { deep, smart })
+        for (const entry of group.entries) {
+          await persistScheduledScan(client, entry, group.url, report, heavy)
         }
       }
     } catch {
-      // A single domain failing must not stall the rest of the batch.
+      // A single host failing must not stall the rest of the batch.
     }
 
-    const interval = INTERVAL_MS[schedule.frequency] ?? WEEK_MS
-    // Best-effort: a failed next_run_at advance must not abort the cron response.
-    await client
-      .from('monitoring_schedules')
-      .update({ next_run_at: new Date(Date.now() + interval).toISOString() })
-      .eq('id', schedule.id)
-    ran += 1
+    for (const { schedule } of group.entries) {
+      const interval = INTERVAL_MS[schedule.frequency] ?? WEEK_MS
+      // Best-effort: a failed next_run_at advance must not abort the cron response.
+      await client
+        .from('monitoring_schedules')
+        .update({ next_run_at: new Date(Date.now() + interval).toISOString() })
+        .eq('id', schedule.id)
+      ran += 1
+    }
   }
 
   return Response.json({ ran })
@@ -137,60 +118,116 @@ export async function GET(request: Request): Promise<Response> {
 
 type TServiceClient = Awaited<ReturnType<typeof createServiceClient>>
 
+interface IScheduleEntry {
+  schedule: {
+    id: string
+    website_id: string
+    frequency: string
+    alert_threshold: number | null
+    alert_delta: number | null
+    scan_mode: string | null
+    smart_agent_enabled: boolean | null
+  }
+  website: { host: string; workspace_id: string; created_by: string | null }
+}
+
+type THeavy = Awaited<ReturnType<typeof computeHeavy>>
+
 /**
- * The slow, best-effort tail of a scheduled scan: the deep crawl and the
- * browser-capable Smart Agent passes. Each stage is independent — a failure in
- * one leaves the base scan (already persisted) and earlier stages intact.
+ * Runs a host's slow shared passes ONCE: the deep crawl and the browser-capable
+ * Smart Agent (single-page, plus its deep pass when both are wanted). Results are
+ * stored per-schedule by persistScheduledScan, so a host tracked by several
+ * workspaces is crawled a single time. Each stage is best-effort.
  */
-async function runDeepAndSmart(
-  client: TServiceClient,
-  scanId: string,
+async function computeHeavy(
   url: string,
   finalUrl: string,
   flags: { deep: boolean; smart: boolean },
-): Promise<void> {
+): Promise<{
+  siteReport: Awaited<ReturnType<typeof scanSite>> | null
+  smartReport: Awaited<ReturnType<typeof runWebSmartAgentAudit>> | null
+  smartSite: Awaited<ReturnType<typeof runWebSmartDeepAudit>> | null
+}> {
   let siteReport: Awaited<ReturnType<typeof scanSite>> | null = null
+  let smartReport: Awaited<ReturnType<typeof runWebSmartAgentAudit>> | null = null
+  let smartSite: Awaited<ReturnType<typeof runWebSmartDeepAudit>> | null = null
   if (flags.deep) {
     try {
       siteReport = await scanSite(url, { checks: allChecks, limit: DEEP_LIMIT })
-      await client
-        .from('scans')
-        .update({ site_report: siteReport as unknown as Json })
-        .eq('id', scanId)
     } catch {
       siteReport = null
     }
   }
-
-  if (!flags.smart) {
-    return
-  }
-  try {
-    await client.from('scans').update({ smart_status: 'running' }).eq('id', scanId)
-    const smartReport = await runWebSmartAgentAudit(finalUrl)
-    await client
-      .from('scans')
-      .update({ smart_status: 'done', smart_report: smartReport as unknown as Json })
-      .eq('id', scanId)
-  } catch {
-    await client
-      .from('scans')
-      .update({ smart_status: 'failed', smart_error: 'agent_browser_failed' })
-      .eq('id', scanId)
-    return
-  }
-
-  if (flags.deep && siteReport !== null) {
+  if (flags.smart) {
     try {
-      const smartSite = await runWebSmartDeepAudit(siteReport)
-      await client
-        .from('scans')
-        .update({ smart_site_report: smartSite as unknown as Json })
-        .eq('id', scanId)
+      smartReport = await runWebSmartAgentAudit(finalUrl)
     } catch {
-      // The single-page Smart Agent already landed; the deep pass is a bonus.
+      smartReport = null
+    }
+    if (flags.deep && siteReport !== null && smartReport !== null) {
+      try {
+        smartSite = await runWebSmartDeepAudit(siteReport)
+      } catch {
+        // The single-page Smart Agent already landed; the deep pass is a bonus.
+      }
     }
   }
+  return { siteReport, smartReport, smartSite }
+}
+
+/**
+ * Persists one scheduled scan row from the shared host report + heavy passes,
+ * honouring THIS schedule's own deep/smart settings, then advances the badge
+ * pointer, fires alerts, and materializes the summary. Best-effort per row.
+ */
+async function persistScheduledScan(
+  client: TServiceClient,
+  entry: IScheduleEntry,
+  url: string,
+  report: IScanReport,
+  heavy: THeavy,
+): Promise<void> {
+  const { schedule, website } = entry
+  const deep = schedule.scan_mode === 'deep'
+  const smart = schedule.smart_agent_enabled !== false
+
+  // Previous monitored score BEFORE inserting, so maybeAlert can detect a drop.
+  const { data: prevScan } = await client
+    .from('scans')
+    .select('report')
+    .eq('website_id', schedule.website_id)
+    .eq('status', 'done')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const previousOverall = isScanReport(prevScan?.report) ? prevScan.report.overall : null
+
+  const scanId = crypto.randomUUID()
+  const { error } = await client.from('scans').insert({
+    id: scanId,
+    url,
+    status: 'done',
+    report: report as unknown as Json,
+    source: 'cron',
+    smart_status: smart ? (heavy.smartReport !== null ? 'done' : 'failed') : 'disabled',
+    smart_report:
+      smart && heavy.smartReport !== null ? (heavy.smartReport as unknown as Json) : null,
+    smart_error: smart && heavy.smartReport === null ? 'agent_browser_failed' : null,
+    site_report: deep && heavy.siteReport !== null ? (heavy.siteReport as unknown as Json) : null,
+    smart_site_report:
+      deep && smart && heavy.smartSite !== null ? (heavy.smartSite as unknown as Json) : null,
+    user_id: website.created_by,
+    workspace_id: website.workspace_id,
+    website_id: schedule.website_id,
+    created_at: new Date().toISOString(),
+  })
+  if (error !== null) {
+    return
+  }
+  // Best-effort: a failed public_report_id update must not fail the domain scan.
+  await client.from('websites').update({ public_report_id: scanId }).eq('id', schedule.website_id)
+  await maybeAlert(client, schedule, website, report, scanId, previousOverall)
+  await materializeScanSummary(client, scanId)
 }
 
 async function maybeAlert(

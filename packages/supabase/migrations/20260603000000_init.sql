@@ -332,6 +332,7 @@ CREATE TABLE public.rate_limit_counters (
 CREATE TABLE public.scans (
     id uuid NOT NULL,
     url text NOT NULL,
+    host text GENERATED ALWAYS AS (regexp_replace(lower(substring(url FROM '://([^/?#]+)'::text)), '^www\.'::text, ''::text)) STORED,
     status text DEFAULT 'queued'::text NOT NULL,
     report jsonb,
     error text,
@@ -606,6 +607,8 @@ CREATE INDEX scans_user_id_idx ON public.scans USING btree (user_id) WHERE (user
 CREATE INDEX scans_website_id_idx ON public.scans USING btree (website_id);
 
 CREATE INDEX scans_workspace_idx ON public.scans USING btree (workspace_id, created_at DESC);
+
+CREATE INDEX scans_host_idx ON public.scans USING btree (host);
 
 CREATE INDEX telemetry_events_created_at_idx ON public.telemetry_events USING btree (created_at DESC);
 
