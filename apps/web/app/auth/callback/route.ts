@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { gaSessionFromCookies, sendGaEvent } from '@/lib/analytics-server'
 
 // MARK: - GET /auth/callback — exchange the OAuth/magic-link code for a session
 
@@ -20,6 +22,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         data: { user },
       } = await supabase.auth.getUser()
       if (user !== null) {
+        // GA4 sign_up for brand-new accounts only (created within 10 min — the
+        // callback is their first authenticated request). No-ops without consent.
+        if (Date.now() - Date.parse(user.created_at) < 600_000) {
+          const cookieStore = await cookies()
+          const ga = gaSessionFromCookies((name) => cookieStore.get(name)?.value)
+          await sendGaEvent(ga, 'sign_up', { method: user.app_metadata?.provider ?? 'email' })
+        }
         const { data: profile } = await supabase
           .from('profiles')
           .select('terms_accepted_at')

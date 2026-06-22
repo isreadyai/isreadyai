@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import { CheckoutSignup } from '@/components/checkout/checkout-signup'
 import { startCheckout } from '@/lib/checkout'
+import { gaSessionFromCookies } from '@/lib/analytics-server'
 import { EPlan } from '@/lib/plans'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
@@ -40,7 +41,9 @@ export default async function CheckoutPage({
     const host = head.get('host')
     const origin =
       host !== null ? `${head.get('x-forwarded-proto') ?? 'http'}://${host}` : undefined
-    const result = await startCheckout(user.id, user.email, plan, origin)
+    const cookieStore = await cookies()
+    const ga = gaSessionFromCookies((name) => cookieStore.get(name)?.value)
+    const result = await startCheckout(user.id, user.email, plan, origin, ga)
     if ('updated' in result) {
       // Existing subscriber repriced in place — no Stripe URL; the webhook syncs
       // the plan once billing loads.

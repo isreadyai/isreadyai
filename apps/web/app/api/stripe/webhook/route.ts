@@ -5,6 +5,7 @@ import { EPlan, planOrFree } from '@/lib/plans'
 import type { TPlan } from '@/lib/plans'
 import { getStripe, isStripeConfigured } from '@/lib/stripe'
 import { higherPlan, planFromPrice, planFromStatus, planRank } from '@/lib/stripe-plan'
+import { sendGaEvent } from '@/lib/analytics-server'
 
 // MARK: - POST /api/stripe/webhook — Stripe subscription lifecycle
 
@@ -93,6 +94,23 @@ async function handleEvent(
     }
     const subscription = await retrieveSubscription(stripe, subscriptionId)
     await syncSubscription(stripe, service, subscription)
+    // GA4 server-side conversion. No-ops without a GA session (consent denied).
+    const value = (session.amount_total ?? 0) / 100
+    await sendGaEvent(
+      {
+        clientId: session.metadata?.ga_client_id ?? '',
+        sessionId: session.metadata?.ga_session_id || null,
+      },
+      'purchase',
+      {
+        currency: (session.currency ?? 'eur').toUpperCase(),
+        value,
+        transaction_id: session.id,
+        items: [
+          { item_name: `isready.ai ${session.metadata?.plan ?? ''}`, price: value, quantity: 1 },
+        ],
+      },
+    )
     return
   }
   if (
