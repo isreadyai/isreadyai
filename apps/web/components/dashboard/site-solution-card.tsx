@@ -44,33 +44,36 @@ export function SiteSolutionCard({ report, premium }: { report: IScanReport; pre
 
   return (
     <section className="border-site-border bg-site-surface/50 flex h-full flex-col gap-4 rounded-2xl border p-6">
-      <div>
-        <h2 className="text-sm font-medium">{t('solutionTitle')}</h2>
-        <p className="text-site-muted mt-1 text-xs">
-          {premium ? t('solutionHint') : t('solutionLockedHint')}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-sm font-medium">{t('solutionTitle')}</h2>
+          <p className="text-site-muted mt-1 text-xs">
+            {premium ? t('solutionHint') : t('solutionLockedHint')}
+          </p>
+        </div>
+        {/* No card content for Free → upgrade CTA sits top-right beside the title. */}
+        {!premium ? (
+          <Button variant={EButtonVariant.SECONDARY} href="/pricing" className="shrink-0">
+            {t('solutionUpsellCta')}
+          </Button>
+        ) : null}
       </div>
       {aiPlan !== null ? (
         <div className="border-site-border bg-site-background/60 text-site-muted max-h-72 overflow-auto rounded-xl border p-4 text-xs leading-relaxed">
           <Streamdown>{aiPlan}</Streamdown>
         </div>
       ) : null}
-      <div className="mt-auto flex flex-wrap justify-end gap-2">
-        {premium ? (
-          <>
-            <Button variant={EButtonVariant.PRIMARY} onPress={onGenerate} isDisabled={pending}>
-              {pending ? t('solutionAiGenerating') : t('solutionAiCta')}
-            </Button>
-            <Button variant={EButtonVariant.SECONDARY} onPress={download}>
-              {t('solutionDownload')}
-            </Button>
-          </>
-        ) : (
-          <Button variant={EButtonVariant.SECONDARY} href="/pricing">
-            {t('solutionUpsellCta')}
+      {/* Premium has controls (content) → actions go bottom-right. */}
+      {premium ? (
+        <div className="mt-auto flex flex-wrap justify-end gap-2">
+          <Button variant={EButtonVariant.PRIMARY} onPress={onGenerate} isDisabled={pending}>
+            {pending ? t('solutionAiGenerating') : t('solutionAiCta')}
           </Button>
-        )}
-      </div>
+          <Button variant={EButtonVariant.SECONDARY} onPress={download}>
+            {t('solutionDownload')}
+          </Button>
+        </div>
+      ) : null}
     </section>
   )
 }
