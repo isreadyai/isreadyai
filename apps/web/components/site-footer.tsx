@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { GITHUB_URL } from '@/lib/site'
 import { GitHubIcon } from '@/components/ui/github-icon'
 import { FooterCommand } from './footer-command'
+import { CookiePreferencesLink } from '@/components/consent/cookie-consent'
 
 // MARK: - Site footer
 
@@ -35,7 +36,17 @@ export async function SiteFooter({ bottomInset = false }: { bottomInset?: boolea
             {t.rich('openSource', { company: renderOpenSourceCompany })}
           </span>
         </p>
-        <div className="flex w-full flex-wrap items-center justify-center gap-x-5 gap-y-3 sm:w-auto sm:flex-nowrap">
+        <div className="flex w-full flex-wrap items-center justify-center gap-x-5 gap-y-3 sm:w-auto">
+          <Link href="/privacy" className="hover:text-site-text transition-colors">
+            {t('privacy')}
+          </Link>
+          <Link href="/terms-and-conditions" className="hover:text-site-text transition-colors">
+            {t('terms')}
+          </Link>
+          <Link href="/sitemap.xml" className="hover:text-site-text transition-colors">
+            {t('sitemap')}
+          </Link>
+          <CookiePreferencesLink className="hover:text-site-text cursor-pointer transition-colors" />
           <Link href="/acknowledgements" className="hover:text-site-text transition-colors">
             {t('thanks')}
           </Link>
