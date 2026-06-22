@@ -1037,6 +1037,18 @@
     "madeBy": "Built for the AI-first web",
     "cli": "Try the CLI",
     "starOn": "Star on",
-    "githubAria": "Star on GitHub (opens in a new tab)"
+    "githubAria": "Star on GitHub (opens in a new tab)",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "sitemap": "Sitemap",
+    "cookies": "Cookie preferences"
+  },
+  "cookies": {
+    "title": "Cookie consent",
+    "body": "We use cookies for analytics to improve isready.ai. See our",
+    "privacy": "Privacy Policy",
+    "terms": "Terms",
+    "accept": "Accept",
+    "reject": "Reject"
   }
 }
