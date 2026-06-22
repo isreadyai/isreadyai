@@ -50,11 +50,18 @@ enabled = false
 
 [auth]
 enabled = true
-site_url = "https://localhost:3300"
+# Per-environment via env() so `supabase config push` never ships a localhost Site
+# URL to production. Local `supabase start` reads https://localhost:3300 from .env;
+# the hosted project sets SUPABASE_AUTH_SITE_URL=https://isready.ai. Supabase honours
+# an app's redirectTo only when it matches this Site URL or the allowlist below —
+# otherwise it silently falls back to the Site URL.
+site_url = "env(SUPABASE_AUTH_SITE_URL)"
 additional_redirect_urls = [
   "https://localhost:3300/auth/callback",
   "http://localhost:3300/auth/callback",
   "https://isready.ai/auth/callback",
+  "https://isready.ai/**",
+  "https://*.vercel.app/auth/callback",
 ]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
