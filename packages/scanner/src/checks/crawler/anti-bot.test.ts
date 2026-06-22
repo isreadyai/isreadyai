@@ -46,4 +46,33 @@ describe('crawler.anti-bot', () => {
     expect(res.status).toBe(EStatus.WARN)
     expect((res.evidence as { vendor: string }).vendor).toBe('Akamai')
   })
+
+  it('PASS on a 200 that merely mentions "just a moment" in its content', async () => {
+    const ctx = makeContext({
+      status: 200,
+      body: "<html><head><title>isready.ai — AI readiness</title></head><body>We detect bot challenges, cookie walls, 'just a moment' interstitials and login gates.</body></html>",
+    })
+    const res = await antiBotCheck.run(ctx)
+    expect(res.status).toBe(EStatus.PASS)
+  })
+
+  it('PASS on a 200 page embedding the Turnstile widget (a legit control, not a block)', async () => {
+    const ctx = makeContext({
+      status: 200,
+      body: '<html><head><title>Sign in</title></head><body><div class="cf-turnstile"></div><script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script></body></html>',
+    })
+    const res = await antiBotCheck.run(ctx)
+    expect(res.status).toBe(EStatus.PASS)
+  })
+
+  it('FAIL on a real challenge served at 200 (challenge marker + interstitial title)', async () => {
+    const ctx = makeContext({
+      status: 200,
+      headers: { server: 'cloudflare' },
+      body: '<html><head><title>Just a moment...</title></head><body><script>window._cf_chl_opt={}</script></body></html>',
+    })
+    const res = await antiBotCheck.run(ctx)
+    expect(res.status).toBe(EStatus.FAIL)
+    expect((res.evidence as { vendor: string }).vendor).toBe('Cloudflare')
+  })
 })
