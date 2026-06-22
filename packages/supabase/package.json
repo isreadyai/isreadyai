@@ -27,12 +27,12 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.108.1"
+    "@supabase/supabase-js": "^2.108.2"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
-    "oxfmt": "^0.54.0",
-    "supabase": "^2.106.0",
+    "oxfmt": "^0.55.0",
+    "supabase": "^2.107.0",
     "typescript": "~6.0.3"
   }
 }
