@@ -7,6 +7,7 @@ import { useState, useTransition } from 'react'
 import { Button, EButtonAppearance, EButtonVariant } from '@/components/ui/button'
 import { notify } from '@/components/ui/toast'
 import { acceptInvitationById, declineInvitation } from '@/lib/actions/team'
+import { daysUntil } from '@/lib/expiry'
 
 // MARK: - Received invites
 
@@ -61,7 +62,7 @@ export function ReceivedInvites({ invitations }: { invitations: IReceivedInvitat
               <p className="text-site-text truncate text-sm font-medium">{invite.workspaceName}</p>
               <p className="text-site-faint text-xs">
                 {t(`teamRole.${invite.role}`)} ·{' '}
-                {t('teamExpires', { date: new Date(invite.expiresAt).toLocaleDateString() })}
+                {t('teamExpires', { days: daysUntil(invite.expiresAt) })}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">

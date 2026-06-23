@@ -298,7 +298,7 @@
     "teamYou": "(you)",
     "teamEmpty": "No teammates yet.",
     "teamJoined": "joined {date}",
-    "teamExpires": "expires {date}",
+    "teamExpires": "expires in {days, plural, one {# day} other {# days}}",
     "teamRole": {
       "owner": "Owner",
       "admin": "Admin",

@@ -21,6 +21,7 @@ import {
   transferOwnership,
 } from '@/lib/actions/team'
 import { useCopyToClipboard } from '@/lib/use-copy-to-clipboard'
+import { daysUntil } from '@/lib/expiry'
 import { ReceivedInvites } from '@/components/dashboard/received-invites'
 
 // MARK: - Team management
@@ -365,7 +366,7 @@ export function TeamClient({
                     <p className="text-site-text truncate text-sm">{invite.email}</p>
                     <p className="text-site-faint text-xs">
                       {t(`teamRole.${invite.role}`)} ·{' '}
-                      {t('teamExpires', { date: new Date(invite.expiresAt).toLocaleDateString() })}
+                      {t('teamExpires', { days: daysUntil(invite.expiresAt) })}
                     </p>
                   </div>
                   {canManage ? (
