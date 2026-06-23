@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { consumeRateLimit } from '@/lib/rate-limit'
-import { createContactTask, isClickUpConfigured } from '@/lib/clickup'
+import { createContactTask, postContactMessage, isClickUpConfigured } from '@/lib/clickup'
 import { verifyTurnstile } from '@/lib/turnstile-verify'
 
 // MARK: - POST /api/contact — contact / feedback / fraudulent-domain report
 //
-// Creates a ClickUp task per submission (the team's CRM). Guarded by a per-IP
-// and a global rate limit plus a Turnstile check, since it's a public form. 503
-// when ClickUp isn't configured — the UI then shows a friendly fallback.
+// Per submission: creates a ClickUp task (the durable record) AND posts a
+// Markdown message to the isready.ai Chat channel for visibility. Guarded by a
+// per-IP and a global rate limit plus a Turnstile check, since it's a public
+// form. 503 when ClickUp isn't configured — the UI then shows a friendly fallback.
 
 export const maxDuration = 15
 
@@ -68,13 +69,19 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'captcha_failed' }, { status: 403 })
   }
 
-  const created = await createContactTask({
+  const submission = {
     reason: parsed.data.reason,
     email: parsed.data.email,
     name: parsed.data.name,
     host: parsed.data.host,
     message: parsed.data.message,
-  })
+  }
+  // Task is the durable record (gates success); the channel message is additive
+  // and best-effort. Run both concurrently to stay within maxDuration.
+  const [created] = await Promise.all([
+    createContactTask(submission),
+    postContactMessage(submission),
+  ])
   if (!created) {
     return NextResponse.json({ error: 'send_failed' }, { status: 502 })
   }
