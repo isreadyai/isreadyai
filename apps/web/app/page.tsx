@@ -10,11 +10,10 @@ import { SmartAgentShowcase } from '@/components/smart-agent-showcase'
 import { PremiumTiers } from '@/components/premium-tiers'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
+import { HeroCopy } from '@/components/hero-copy'
 import { Reveal } from '@/components/motion/reveal'
 import { RevealOnScroll } from '@/components/motion/reveal-on-scroll'
-import { FlipBoardText } from '@/components/motion/flip-board-text'
 import { StatCounter } from '@/components/motion/stat-counter'
-import { TorchText } from '@/components/motion/torch-text'
 import { VercelMark } from '@/components/ui/vercel-mark'
 import {
   CHECK_CATEGORY_DOCUMENTATION,
@@ -25,6 +24,7 @@ import {
   SMART_SCORE_SOURCE_URL,
 } from '@/lib/check-category-docs'
 import { getScanStore } from '@/lib/scan-store.ts'
+import { parseMkt } from '@/lib/mkt'
 import { GITHUB_URL, SITE_NAME, SITE_URL } from '@/lib/site'
 
 // MARK: - Landing page (dogfood: SSG, semantic HTML, full JSON-LD)
@@ -33,8 +33,14 @@ import { GITHUB_URL, SITE_NAME, SITE_URL } from '@/lib/site'
 // without a per-request DB query, keeping TTFB low for AI fetchers.
 export const revalidate = 3600
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mkt?: string | string[] }>
+}) {
   const t = await getTranslations()
+
+  const mkt = parseMkt((await searchParams).mkt)
 
   const store = await getScanStore()
   const checksPerformed = (await store.countCompletedScans()) * allChecks.length
@@ -110,32 +116,7 @@ export default async function HomePage() {
                   {t('hero.kicker', { count: allChecks.length })}
                 </p>
               </Reveal>
-              <Reveal delay={0.08}>
-                <h1 className="mx-auto max-w-5xl text-[2.5rem] leading-[1.08] font-bold tracking-tight text-balance sm:text-6xl">
-                  <span className="block">{t('hero.future')}</span>
-                  <span className="mt-2 block">
-                    <span className="sm:whitespace-nowrap">
-                      {t('hero.questionPrefix')}{' '}
-                      <FlipBoardText
-                        terms={[
-                          t('hero.subjectWebsite'),
-                          t('hero.subjectWebApp'),
-                          t('hero.subjectDocsSite'),
-                          t('hero.subjectLandingPage'),
-                          t('hero.subjectPortfolio'),
-                        ]}
-                      />
-                    </span>{' '}
-                    <TorchText>{t('hero.titleAccent')}</TorchText>
-                    {t('hero.title2')}
-                  </span>
-                </h1>
-              </Reveal>
-              <Reveal delay={0.16}>
-                <p className="text-site-text/90 mx-auto mt-6 max-w-2xl text-base font-medium text-pretty sm:text-xl">
-                  {t('hero.subtitle')}
-                </p>
-              </Reveal>
+              <HeroCopy mkt={mkt} />
               <Reveal delay={0.24} className="mt-10 flex w-full justify-center">
                 <ScanForm />
               </Reveal>

@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Web app (`apps/web`)
 
+- **Campaign hero copy variants** (`?mkt=1`…`8`): paid/marketing landing URLs select an alternative hero headline + subtitle, rendered on the server so there is no copy flash; the canonical `/` always serves the default copy, so SEO and AI crawlers are unaffected.
 - **My Websites scan inheritance**: adding a site claims your own past scans of that exact host (including anonymous, pre-signup ones); verifying ownership claims all still-unclaimed scans of the host (anonymous and others'), never touching scans already owned by another workspace.
 - GA4 server-side conversions via the Measurement Protocol — `purchase` (from the Stripe webhook, with the `_ga` client/session carried through Stripe metadata) and `sign_up` (from the auth callback); both consent-aware.
 - Cookie-consent banner (Consent Mode v2), footer Privacy / Terms / Sitemap links, and an expanded `sitemap.xml`.
