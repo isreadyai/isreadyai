@@ -79,15 +79,7 @@ AI assistants are becoming a primary discovery channel, and the rules differ fro
 
 ### Built With
 
-- [![Turborepo][Turborepo]][Turborepo-url]
-- [![Bun][Bun]][Bun-url]
-- [![TypeScript][TypeScript]][TypeScript-url]
-- [![Next.js][Next.js]][Next-url]
-- [![React][React]][React-url]
-- [![HeroUI][HeroUI]][HeroUI-url]
-- [![Tailwind CSS][Tailwind]][Tailwind-url]
-- [![Supabase][Supabase]][Supabase-url]
-- [![Vercel][Vercel]][Vercel-url]
+[![Turborepo][Turborepo]][Turborepo-url] [![Bun][Bun]][Bun-url] [![TypeScript][TypeScript]][TypeScript-url] [![Next.js][Next.js]][Next-url] [![React][React]][React-url] [![HeroUI][HeroUI]][HeroUI-url] [![Tailwind CSS][Tailwind]][Tailwind-url] [![Supabase][Supabase]][Supabase-url] [![Vercel][Vercel]][Vercel-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -336,12 +328,12 @@ Informational signals (`llms.txt`, robots.txt Content Signals) are reported on e
 - [x] Saved reports and score history over time
 - [x] Premium: scheduled re-scans with score-drop alerts and a weekly email report
 - [x] Ask your site — premium grounded chat over your report (Vercel AI Gateway)
-- [ ] Two-factor authentication — TOTP authenticator app (Supabase-native MFA)
-- [ ] Passkeys (WebAuthn) — passwordless, phishing-resistant login. Supabase Auth now ships passkeys natively (Beta); wire `signInWithPasskey()` plus passkey enrollment/management in account settings, behind the experimental WebAuthn opt-in and relying-party config (RP ID, origins)
-- [ ] Embeddable "AI-Ready ✓" badge linking to a public report
 - [x] Premium: AI-generated fix plans (Vercel AI Gateway) — tailored to your stack, in the report, on the website detail, and written into the fix Action's PR + job summary
-- [ ] Optional JS-render analysis (self-hosted, premium) for CSR-heavy sites
 - [ ] GitHub-connected source scanning for login-gated SaaS
+- [ ] Embeddable "AI-Ready ✓" badge linking to a public report
+- [ ] Optional JS-render analysis (self-hosted, premium) for CSR-heavy sites
+- [ ] Passkeys (WebAuthn) — passwordless, phishing-resistant login. Supabase Auth now ships passkeys natively (Beta); wire `signInWithPasskey()` plus passkey enrollment/management in account settings, behind the experimental WebAuthn opt-in and relying-party config (RP ID, origins)
+- [ ] Two-factor authentication — TOTP authenticator app (Supabase-native MFA)
 
 See [open issues](https://github.com/isreadyai/isreadyai/issues) for the full list.
 
@@ -451,6 +443,8 @@ root [`LICENSE`](./LICENSE) for the map and [`NOTICE`](./NOTICE) for ownership.
 Smart Squad Srl — [smartsquad.io](https://smartsquad.io)
 
 Project: [https://isready.ai](https://isready.ai) · [https://github.com/isreadyai/isreadyai](https://github.com/isreadyai/isreadyai)
+
+Contact: [https://isready.ai/contact](https://isready.ai/contact)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

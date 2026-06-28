@@ -1,9 +1,5 @@
 name: 'isreadyai — AI readiness fix PR'
-description: >-
-  Scans a URL, then runs an isready.ai AI agent INSIDE this runner that reads
-  your repo and applies AI-readiness fixes, and opens a pull request. The agent
-  runs locally with a short-lived metered token — your source is never stored by
-  isready.ai. Requires a Pro or Team isreadyai API key.
+description: Scans a URL, then runs an IsReady.AI agent INSIDE this runner that reads your repo and applies AI-readiness fixes, and opens a pull request. The agent runs locally with a short-lived metered token — your source is never stored by IsReady.AI. Requires a Pro or Team IsReady.AI API key.
 author: 'Smart Squad S.r.l. (https://smartsquad.io)'
 branding:
   icon: 'git-pull-request'
@@ -23,7 +19,7 @@ inputs:
   branch:
     description: 'Branch name for the fix PR'
     required: false
-    default: 'isready/ai-readiness-fixes'
+    default: 'feature/ai-readiness-fixes'
   dry-run:
     description: 'Apply edits and print the summary without opening a PR'
     required: false
