@@ -678,8 +678,10 @@
     "usesLabel": "Use in your workflow",
     "copy": "copy",
     "copied": "copied ✓",
+    "fixActionLabel": "Auto-fix pull requests",
+    "fixActionText": "isreadyai/fix-action@v1 scans the URL, runs an AI agent inside your own runner to apply the minimal fixes, and opens a pull request for you to review. Requires a Pro or Team API key.",
     "badgeLabel": "Live README badge",
-    "badgeText": "Served live by isready.ai for your verified domain (Pro & Team) and re-scanned on a schedule — it stays current on its own, no CI step. Copy the Markdown into your README.",
+    "badgeText": "Served live by isready.ai for your verified domain (Pro & Team) and re-scanned on a schedule — it stays current on its own, no CI step. Copy the Markdown into your README. Prefer a badge scoped to this repo and branch instead? Add api-key to the workflow above to get one from CI.",
     "badgeAlt": "AI Ready badge example",
     "viewOnGithub": "View on GitHub",
     "viewOnGithubAria": "View on GitHub (opens in a new tab)"
@@ -777,9 +779,11 @@
     "q5": "Does llms.txt help AI crawlers find my content?",
     "a5": "It can't hurt, but don't expect miracles: no major AI provider has confirmed consuming it, and Google has said it doesn't use it. We report it as informational and never let it affect your score.",
     "q6": "Can I run this in CI or from the terminal?",
-    "a6": "Yes. Run npx isreadyai yourdomain.com for the full audit in your terminal, with --json for machines and --llm for a fix plan you can paste into an AI coding agent. The GitHub Action gates deployments on a minimum score and writes the full report to the job summary.",
+    "a6": "Yes. Run npx isreadyai yourdomain.com for the full audit in your terminal, with --json for machines and --llm for a fix plan you can paste into an AI coding agent. The isreadyai/audit-action@v1 GitHub Action gates deployments on a minimum score and writes the full report to the job summary. Add api-key (Pro/Team) and grant the job permissions: id-token: write to also upload the report and unlock a branch-stable repo badge for that repo and branch.",
     "q7": "Why does AI readability matter?",
-    "a7": "Your customers ask ChatGPT, Perplexity and Gemini before they ask Google. If AI can't read your site, you're invisible in the answers they trust — no matter how well you rank on classic search. isready.ai shows you exactly what every AI sees and the precise fixes to get cited."
+    "a7": "Your customers ask ChatGPT, Perplexity and Gemini before they ask Google. If AI can't read your site, you're invisible in the answers they trust — no matter how well you rank on classic search. isready.ai shows you exactly what every AI sees and the precise fixes to get cited.",
+    "q8": "Can isready.ai open pull requests to fix issues automatically?",
+    "a8": "Yes, on Pro and Team plans. Add isreadyai/fix-action@v1 to a workflow with an ISREADYAI_API_KEY secret and permissions: contents: write, pull-requests: write plus id-token: write (the run also uploads the CI report and unlocks the repo badge); it scans the URL, runs an AI agent inside your own runner to apply the minimal fixes, and opens a pull request for you to review."
   },
   "report": {
     "title": "AI readiness report",

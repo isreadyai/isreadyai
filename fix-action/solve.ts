@@ -1,18 +1,20 @@
 #!/usr/bin/env bun
-// Premium AI fix agent — runs INSIDE the runner, in the user's repo checkout.
-// Source is read and edited locally here; only the model messages — the system
-// prompt, the scan findings, and the file snippets the agent chooses to open —
-// transit the inference proxy (ephemeral SOLVE_TOKEN, model pinned server-side)
-// and are not persisted by isready.ai. Secret-bearing files are blocked from
-// reads and obvious secrets in readable files are redacted before being sent.
-//
-//   1. reads the scan report (findings) from REPORT_PATH
-//   2. runs an OpenAI-compatible tool-calling loop against SOLVE_BASE_URL,
-//      authenticated with the short-lived SOLVE_TOKEN (model pinned server-side)
-//   3. applies the model's file edits to the working tree (cwd = workspace)
-//   4. emits the patch count; action.yml opens the PR
-//
-// Zero dependencies — plain fetch + node:fs.
+/**
+ * Premium AI fix agent — runs INSIDE the runner, in the user's repo checkout.
+ * Source is read and edited locally here; only the model messages — the system
+ * prompt, the scan findings, and the file snippets the agent chooses to open —
+ * transit the inference proxy (ephemeral SOLVE_TOKEN, model pinned server-side)
+ * and are not persisted by isready.ai. Secret-bearing files are blocked from
+ * reads and obvious secrets in readable files are redacted before being sent.
+ *
+ * 1. reads the scan report (findings) from REPORT_PATH
+ * 2. runs an OpenAI-compatible tool-calling loop against SOLVE_BASE_URL,
+ *    authenticated with the short-lived SOLVE_TOKEN (model pinned server-side)
+ * 3. applies the model's file edits to the working tree (cwd = workspace)
+ * 4. emits the patch count; action.yml opens the PR
+ *
+ * Zero dependencies — plain fetch + node:fs.
+ */
 
 import {
   existsSync,
@@ -31,17 +33,21 @@ const MAX_FILE_BYTES = 64_000
 const MAX_LIST = 400
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', '.next', '.turbo', 'coverage'])
 
-// Paths the agent may never read or write. The repo source it reads is untrusted
-// (prompt-injection), and the action commits + pushes with GH_TOKEN in env and may
-// run git hooks — so a write to .git/.github-workflows/.husky/node_modules would be
-// arbitrary code execution in the runner. Enforce on every read AND write, not just
-// the listing walk.
+/**
+ * Paths the agent may never read or write. The repo source it reads is untrusted
+ * (prompt-injection), and the action commits + pushes with GH_TOKEN in env and may
+ * run git hooks — so a write to .git/.github-workflows/.husky/node_modules would be
+ * arbitrary code execution in the runner. Enforce on every read AND write, not just
+ * the listing walk.
+ */
 const DENY_SEGMENTS = new Set(['.git', 'node_modules'])
 
-// Files that commonly carry credentials. The checkout is untrusted, and a
-// prompt-injected instruction could ask the agent to read one and echo it into
-// the model conversation — so block them on READ (stricter than the write
-// denylist, which is about RCE). `.env.example`/sample/template stay readable.
+/**
+ * Files that commonly carry credentials. The checkout is untrusted, and a
+ * prompt-injected instruction could ask the agent to read one and echo it into
+ * the model conversation — so block them on READ (stricter than the write
+ * denylist, which is about RCE). `.env.example`/sample/template stay readable.
+ */
 const SECRET_FILES = new Set([
   '.npmrc',
   '.netrc',
@@ -55,8 +61,34 @@ const SECRET_FILES = new Set([
 ])
 const SECRET_EXT_RE = /\.(pem|key|pfx|p12|keystore|jks|crt|cer|der|ppk|asc|gpg|p8|tfstate|tfvars)$/i
 
-// Thrown when a path is refused; caught in runTool so one poisoned tool call is
-// rejected without aborting the whole fix run.
+/**
+ * Generated / machine-authored artifacts the agent may never open or edit:
+ * dependency lockfiles, minified bundles, and source maps. They are large
+ * (a single one can blow the request budget), are never the right place to
+ * hand-apply an AI-readiness fix, and — being generated — are a tempting but
+ * pointless target. Filtered from list_files so the model never sees them and
+ * refused on read (returns "forbidden"). Single source of truth: `isGeneratedPath`
+ * is the only consumer, so the denylist has exactly one definition.
+ */
+const GENERATED_FILES = new Set([
+  'bun.lock',
+  'bun.lockb',
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml',
+  'composer.lock',
+  'Gemfile.lock',
+  'Cargo.lock',
+  'poetry.lock',
+  'uv.lock',
+  'go.sum',
+])
+const GENERATED_EXT_RE = /\.(min\.js|min\.css|map)$/i
+
+/**
+ * Thrown when a path is refused; caught in runTool so one poisoned tool call is
+ * rejected without aborting the whole fix run.
+ */
 class SandboxError extends Error {}
 
 function fail(message: string): never {
@@ -85,12 +117,14 @@ function setOutput(name: string, value: string): void {
 
 const root = resolve(process.cwd())
 
-// MARK: - Sandbox-safe file access (workspace-relative only)
+/** MARK: - Sandbox-safe file access (workspace-relative only) */
 
-// True when the (workspace-relative) path targets a denylisted location: the git
-// store, dependency tree, CI workflows, or any git-hook directory. Hooks are the
-// RCE vector — .git/hooks, .husky/*, or a `hooks` dir under any dotfile dir all run
-// on `git commit`.
+/**
+ * True when the (workspace-relative) path targets a denylisted location: the git
+ * store, dependency tree, CI workflows, or any git-hook directory. Hooks are the
+ * RCE vector — .git/hooks, .husky/*, or a `hooks` dir under any dotfile dir all run
+ * on `git commit`.
+ */
 export function isWriteDenied(rel: string): boolean {
   const segments = rel.split('/').filter((segment) => segment.length > 0)
   if (segments.length === 0) {
@@ -114,10 +148,12 @@ export function isWriteDenied(rel: string): boolean {
   return false
 }
 
-// Resolves an input to an absolute path inside `root`, rejecting both lexical
-// escapes and symlink escapes. A committed symlink (e.g. `out -> /`) would pass a
-// pure path.resolve()/startsWith() check, so we realpath the nearest existing
-// ancestor and re-assert containment against the realpath'd root.
+/**
+ * Resolves an input to an absolute path inside `root`, rejecting both lexical
+ * escapes and symlink escapes. A committed symlink (e.g. `out -> /`) would pass a
+ * pure path.resolve()/startsWith() check, so we realpath the nearest existing
+ * ancestor and re-assert containment against the realpath'd root.
+ */
 export function safePathIn(workspaceRoot: string, input: string): string {
   if (input.length === 0 || input.startsWith('/') || input.includes('..') || input.includes('\0')) {
     deny(`refusing unsafe path: ${input}`)
@@ -344,6 +380,178 @@ interface IMessage {
   tool_call_id?: string
 }
 
+/** MARK: - Job summary (run observability) */
+
+interface IReportCheck {
+  status?: string
+  title?: string
+  detail?: string
+  fix?: string
+  impact?: string
+}
+
+interface IReportShape {
+  url?: string
+  finalUrl?: string
+  overall?: number
+  grade?: string
+  primary?: { checks?: IReportCheck[] }
+  checks?: IReportCheck[]
+}
+
+function reportHost(report: IReportShape): string {
+  const url = report.finalUrl ?? report.url
+  if (typeof url !== 'string' || url.length === 0) {
+    return 'the site'
+  }
+  try {
+    return new URL(url).host
+  } catch {
+    return url
+  }
+}
+
+/**
+ * The scan's non-passing checks, read straight from the scanner's own report —
+ * the primary page's checks (site-scope + the primary's page-scope), falling
+ * back to a flat top-level `checks` array for a non-deep report. The scanner
+ * stays the single source of truth: this only SELECTS its results, it never
+ * re-derives what a check means. Shared by the model findings payload and the
+ * job summary so both consume the same source.
+ */
+function nonPassChecks(report: IReportShape): IReportCheck[] {
+  const checks = report.primary?.checks ?? report.checks ?? []
+  return checks.filter((check) => check.status !== undefined && check.status !== 'pass')
+}
+
+interface ICompactFinding {
+  status: string
+  impact?: string
+  title?: string
+  detail?: string
+  fix?: string
+}
+
+/**
+ * The findings payload handed to the model: the scanner's non-pass checks,
+ * projected to just the fields the agent needs to act — status, impact, the
+ * outcome `detail`, the check `title`, and the scanner's own `fix` hint.
+ * Nothing here is invented: every field is copied verbatim from the report, so
+ * the scanner remains the single source of truth for check semantics. Replaces
+ * sending the whole report JSON blindly sliced to the byte cap, which produced
+ * truncated (often invalid) JSON and buried the actionable findings under
+ * scores, evidence and metadata. If the serialized list would still exceed
+ * MAX_FINDINGS_BYTES, whole findings are dropped (not raw bytes) so the model
+ * always receives valid JSON.
+ */
+export function compactFindings(report: unknown): string {
+  const shape = (report ?? {}) as IReportShape
+  const findings: ICompactFinding[] = nonPassChecks(shape).map((check) => {
+    const finding: ICompactFinding = { status: check.status ?? 'warn' }
+    if (check.impact !== undefined) {
+      finding.impact = check.impact
+    }
+    if (check.title !== undefined) {
+      finding.title = check.title
+    }
+    if (check.detail !== undefined) {
+      finding.detail = check.detail
+    }
+    if (check.fix !== undefined) {
+      finding.fix = check.fix
+    }
+    return finding
+  })
+  const base = {
+    site: reportHost(shape),
+    score: typeof shape.overall === 'number' ? shape.overall : undefined,
+    grade: typeof shape.grade === 'string' ? shape.grade : undefined,
+  }
+  let kept = findings
+  let serialized = JSON.stringify({ ...base, findings: kept })
+  while (serialized.length > MAX_FINDINGS_BYTES && kept.length > 0) {
+    const ratio = MAX_FINDINGS_BYTES / serialized.length
+    const nextCount = Math.max(0, Math.min(kept.length - 1, Math.floor(kept.length * ratio)))
+    kept = findings.slice(0, nextCount)
+    serialized = JSON.stringify({
+      ...base,
+      findings: kept,
+      truncated: findings.length - kept.length,
+    })
+  }
+  return serialized
+}
+
+/**
+ * One job-summary bullet for a non-pass check. Reconciles the check's static
+ * `title` — which asserts the PASSING condition ("…header is present") — with
+ * its actual `detail`, the real outcome ("No …header."). For a non-pass check
+ * the title contradicts reality, so we lead with the outcome `detail` and fall
+ * back to the title only when there is no detail, then append the scanner's own
+ * `fix` hint when present. No check semantics are encoded here — every string
+ * comes from the report.
+ */
+function findingBullet(check: IReportCheck): string {
+  const status = check.status ?? 'note'
+  const body = check.detail ?? check.title ?? '(check)'
+  const fix =
+    typeof check.fix === 'string' && check.fix.trim().length > 0
+      ? ` _Suggested fix:_ ${check.fix.trim()}`
+      : ''
+  return `- **[${status}]** ${body}${fix}`
+}
+
+/**
+ * Markdown for the GitHub job summary so every run explains its outcome — most
+ * importantly the silent 0-change case, which lists the non-pass checks (warn +
+ * info) so "nothing was opened" reads as "already AI-ready", not as a failure.
+ * Best-effort: tolerates a missing/partial report and never throws.
+ */
+export function buildJobSummary(input: {
+  report: unknown
+  changedFiles: string[]
+  summary: string
+}): string {
+  const report = (input.report ?? {}) as IReportShape
+  const host = reportHost(report)
+  const score =
+    typeof report.overall === 'number'
+      ? `${report.overall}/100${typeof report.grade === 'string' ? ` (${report.grade})` : ''}`
+      : null
+
+  const lines: string[] = ['## isready.ai — AI fix run', '']
+  lines.push(score !== null ? `**${host}** scored **${score}**.` : `Scanned **${host}**.`)
+  lines.push('')
+
+  if (input.changedFiles.length === 0) {
+    const nonPass = nonPassChecks(report)
+    if (nonPass.length === 0) {
+      lines.push('No changes were necessary — the site is already AI-ready.')
+      return lines.join('\n')
+    }
+    // Don't overclaim "already AI-ready" when findings remain: no files were
+    // changed this run, but list what is still open — honestly, leading with
+    // each check's real outcome (detail) plus its fix hint, not the static
+    // title that asserts the passing state.
+    lines.push('No files were changed in this run — the findings below were not auto-fixed.')
+    lines.push('', '### Remaining findings (not auto-fixed)', '')
+    for (const check of nonPass) {
+      lines.push(findingBullet(check))
+    }
+    return lines.join('\n')
+  }
+
+  lines.push(`Applied **${input.changedFiles.length}** fix(es) — see the pull request.`)
+  if (input.summary.trim().length > 0) {
+    lines.push('', input.summary.trim())
+  }
+  lines.push('', '### Files changed', '')
+  for (const file of input.changedFiles) {
+    lines.push(`- \`${file}\``)
+  }
+  return lines.join('\n')
+}
+
 async function main(): Promise<void> {
   const token = requireEnv('SOLVE_TOKEN')
   const baseUrl = requireEnv('SOLVE_BASE_URL')
@@ -424,13 +632,41 @@ async function main(): Promise<void> {
       '_Generated by the isready.ai premium fix agent — the AI ran inside this runner; only the file snippets it opened were sent for inference, and were not stored by isready.ai._',
     ].join('\n')
     writeFileSync(join(fixDir, 'pr-body.md'), prBody)
-    // NUL-delimited list of exactly the files the agent changed. The PR step stages
-    // only these (git add --pathspec-from-file --pathspec-file-nul) instead of `git
-    // add -A`, so a stray write outside this set is never committed or pushed.
+    /**
+     * NUL-delimited list of exactly the files the agent changed. The PR step stages
+     * only these (git add --pathspec-from-file --pathspec-file-nul) instead of `git
+     * add -A`, so a stray write outside this set is never committed or pushed.
+     */
     writeFileSync(join(fixDir, 'changed.list'), [...changed].join('\0'))
   }
 
-  console.log(`isready solve: ${changed.size} file(s) changed`)
+  /**
+   * Always explain the outcome in the job summary — most importantly the silent
+   * 0-change case, which otherwise leaves a green run with no branch and no clue.
+   */
+  const stepSummary = process.env.GITHUB_STEP_SUMMARY
+  if (stepSummary !== undefined) {
+    appendFileSync(
+      stepSummary,
+      `${buildJobSummary({ report, changedFiles: [...changed], summary })}\n`,
+    )
+  }
+
+  if (changed.size > 0) {
+    console.log(`isready solve: ${changed.size} file(s) changed — opening a PR`)
+  } else {
+    const reportShape = (report ?? {}) as IReportShape
+    const nonPass = nonPassChecks(reportShape)
+    if (nonPass.length === 0) {
+      const overall = (report as { overall?: number }).overall
+      const score = typeof overall === 'number' ? ` (${overall}/100)` : ''
+      console.log(`isready solve: no changes needed — site already AI-ready${score}`)
+    } else {
+      console.log(
+        `isready solve: no repo-applicable fixes applied — ${nonPass.length} finding(s) remain (see summary)`,
+      )
+    }
+  }
 }
 
 if (import.meta.main) {
