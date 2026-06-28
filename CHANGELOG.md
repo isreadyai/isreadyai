@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### GitHub Action — fix PR (`fix-action/action.yml`)
 
 - New action that scans a URL, runs an isready.ai AI agent **inside the runner** under a short-lived, metered, inference-scoped token (the real gateway key never leaves isready.ai; your source is never stored), applies AI-readiness fixes, and opens a pull request. Stages only the agent's reported changed files — never `git add -A`. Requires a Pro or Team API key.
+- Writes a job summary explaining every outcome, including the silent 0-change case (lists the non-pass checks, so a green run with no PR reads as "already AI-ready").
+- Emails the API-key owner when it opens a PR (`/api/fix-notify`, Resend; recipient resolved server-side, link pinned to `github.com`).
 
 #### Web app (`apps/web`)
 
