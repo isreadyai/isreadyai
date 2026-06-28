@@ -158,8 +158,7 @@ runs:
         SOLVE_SCRIPT: ${{ github.action_path }}/solve.ts
       run: |
         set -euo pipefail
-        # Mint a short-lived, inference-scoped token. The real gateway key stays
-        # on isready.ai; the agent below only ever sees this ephemeral token.
+        # Mint a short-lived, inference-scoped token. The real gateway key stays on isready.ai; the agent below only ever sees this ephemeral token.
         HTTP=$(curl -s -o "$TOKEN_FILE" -w "%{http_code}" -X POST "$ISREADYAI_API_URL/api/solve-token" \
           -H "authorization: Bearer $ISREADYAI_API_KEY" \
           -H "content-type: application/json" \
@@ -200,15 +199,15 @@ runs:
         BRANCH: ${{ inputs.branch }}
         FIX_DIR: ${{ runner.temp }}/isready-fix
         GH_TOKEN: ${{ github.token }}
+        ISREADYAI_API_KEY: ${{ inputs.api-key }}
+        ISREADYAI_API_URL: ${{ inputs.api-url }}
+        PATCHES: ${{ steps.solve.outputs.patches }}
       run: |
         set -euo pipefail
         git config user.name "isready-bot"
         git config user.email "bot@isready.ai"
         git checkout -B "$BRANCH"
-        # Stage ONLY the files the agent reported changing (NUL-delimited list it
-        # wrote), never `git add -A`. The repo source the agent read is untrusted,
-        # so a stray write outside this set must never be staged, committed or
-        # pushed — the push runs git hooks with GH_TOKEN in env.
+        # Stage ONLY the files the agent reported changing (NUL-delimited list it wrote), never `git add -A`. The repo source the agent read is untrusted, so a stray write outside this set must never be staged, committed or pushed — the push runs git hooks with GH_TOKEN in env.
         if [ ! -s "$FIX_DIR/changed.list" ]; then
           echo "::error::no changed-file manifest from the fix agent"
           exit 1
@@ -223,3 +222,11 @@ runs:
           2>/dev/null || gh pr view "$BRANCH" --json url --jq .url)
         echo "pr-url=$PR_URL" >> "$GITHUB_OUTPUT"
         echo "Opened $PR_URL"
+        # Best-effort: tell isready.ai a PR was opened so it can email the account owner. Never fail the run if the notification call fails.
+        if [ -n "${ISREADYAI_API_KEY:-}" ] && [ -n "$PR_URL" ]; then
+          curl -fsS -m 15 -X POST "$ISREADYAI_API_URL/api/fix-notify" \
+            -H "authorization: Bearer $ISREADYAI_API_KEY" \
+            -H "content-type: application/json" \
+            -d "$(printf '{"repo":"%s","prUrl":"%s","patches":%s}' "$GITHUB_REPOSITORY" "$PR_URL" "${PATCHES:-0}")" \
+            >/dev/null 2>&1 || true
+        fi

@@ -49,7 +49,7 @@ export default async function HomePage({
   // null when Stripe isn't configured, so the table simply omits the amount.
   const prices = await getPlanPrices((await headers()).get('x-vercel-ip-country'))
 
-  const faqEntries = [7, 1, 2, 3, 4, 5, 6].map((i) => ({
+  const faqEntries = [7, 1, 2, 3, 4, 5, 6, 8].map((i) => ({
     question: t(`faq.q${i}`),
     answer: t(`faq.a${i}`),
   }))
