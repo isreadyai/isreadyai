@@ -38,7 +38,7 @@
     "exits": "^2.0.1",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.71.0",
-    "turbo": "^2.9.18",
+    "turbo": "^2.10.0",
     "typescript": "~6.0.3"
   },
   "overrides": {
