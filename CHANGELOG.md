@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### Web app (`apps/web`)
+
+- **Public badge no longer sticks on "premium" after a site goes live** (`/badge/[domain]`): the locked badge was cached with a 24h `stale-while-revalidate`, so a domain that had just been verified, upgraded and badge-activated kept serving the stale locked "premium" badge for up to a day even though the origin already returned the real score. The locked (and not-yet-scored) badge now carries a short TTL and revalidation window, so the flip to the live score happens within ~a minute.
+- **Badge lookup canonicalizes the host** (`verifiedDomainBadgeScore`): `websites.host` is stored lowercased with a leading `www.` stripped, but the badge lookup compared the raw request host — so `/badge/www.deluisa.bio` (or a mixed-case host) missed the row and wrongly fell through to the locked badge. The lookup now normalizes the host the same way it is stored.
+
 ## [0.2.0] - 2026-07-02
 ### Changed
 
