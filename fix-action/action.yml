@@ -1,9 +1,5 @@
-name: 'isreadyai — AI readiness fix PR'
-description: >-
-  Scans a URL, then runs an isready.ai AI agent INSIDE this runner that reads
-  your repo and applies AI-readiness fixes, and opens a pull request. The agent
-  runs locally with a short-lived metered token — your source is never stored by
-  isready.ai. Requires a Pro or Team isreadyai API key.
+name: 'IsReadyAI — readiness fix'
+description: Scans a URL, then runs an IsReady.AI agent INSIDE this runner that reads your repo and applies AI-readiness fixes, and opens a pull request. The agent runs locally with a short-lived metered token — your source is never stored by IsReady.AI. Requires a Pro or Team IsReady.AI API key.
 author: 'Smart Squad S.r.l. (https://smartsquad.io)'
 branding:
   icon: 'git-pull-request'
@@ -23,7 +19,7 @@ inputs:
   branch:
     description: 'Branch name for the fix PR'
     required: false
-    default: 'isready/ai-readiness-fixes'
+    default: 'feature/ai-readiness-fixes'
   dry-run:
     description: 'Apply edits and print the summary without opening a PR'
     required: false
@@ -162,8 +158,7 @@ runs:
         SOLVE_SCRIPT: ${{ github.action_path }}/solve.ts
       run: |
         set -euo pipefail
-        # Mint a short-lived, inference-scoped token. The real gateway key stays
-        # on isready.ai; the agent below only ever sees this ephemeral token.
+        # Mint a short-lived, inference-scoped token. The real gateway key stays on isready.ai; the agent below only ever sees this ephemeral token.
         HTTP=$(curl -s -o "$TOKEN_FILE" -w "%{http_code}" -X POST "$ISREADYAI_API_URL/api/solve-token" \
           -H "authorization: Bearer $ISREADYAI_API_KEY" \
           -H "content-type: application/json" \
@@ -204,22 +199,51 @@ runs:
         BRANCH: ${{ inputs.branch }}
         FIX_DIR: ${{ runner.temp }}/isready-fix
         GH_TOKEN: ${{ github.token }}
+        ISREADYAI_API_KEY: ${{ inputs.api-key }}
+        ISREADYAI_API_URL: ${{ inputs.api-url }}
+        PATCHES: ${{ steps.solve.outputs.patches }}
       run: |
         set -euo pipefail
+        # No GitHub token → we can't push or open a PR. On GitHub this is always
+        # set (github.token); it's empty when running under `act` locally. Rather
+        # than let `git push`/`gh` fail the step under `set -e` (red job for a
+        # perfectly good fix run), surface an actionable warning, record the
+        # prepared fix in the job summary, and exit green. Real-GitHub behavior is
+        # unchanged: with a token present this guard is skipped entirely.
+        if [ -z "${GH_TOKEN:-}" ]; then
+          echo "::warning::isready.ai produced ${PATCHES:-?} change(s) but no GitHub token is available, so no pull request was opened. This is expected when running under \`act\` locally. On GitHub Actions this uses github.token automatically; to open the PR elsewhere, pass GH_TOKEN with 'contents: write' and 'pull-requests: write' permissions."
+          {
+            echo "## isready.ai — changes ready, pull request not opened"
+            echo ""
+            echo "Produced **${PATCHES:-?}** change(s), but no GitHub token was available so the pull request was not opened (normal when running locally under \`act\`). The edits are applied in the workspace; re-run on GitHub Actions to open the PR automatically."
+            if [ -s "$FIX_DIR/pr-body.md" ]; then
+              echo ""
+              echo "<details><summary>Prepared pull-request body</summary>"
+              echo ""
+              cat "$FIX_DIR/pr-body.md"
+              echo ""
+              echo "</details>"
+            fi
+          } >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+          exit 0
+        fi
         git config user.name "isready-bot"
         git config user.email "bot@isready.ai"
-        git checkout -B "$BRANCH"
-        # Stage ONLY the files the agent reported changing (NUL-delimited list it
-        # wrote), never `git add -A`. The repo source the agent read is untrusted,
-        # so a stray write outside this set must never be staged, committed or
-        # pushed — the push runs git hooks with GH_TOKEN in env.
+        # Disable repo-supplied git hooks on every git command below (core.hooksPath=/dev/null
+        # + --no-verify on commit/push): GH_TOKEN is in this step's env and the source the agent
+        # read is untrusted, so no post-checkout/pre-commit/commit-msg/pre-push hook may run with
+        # the token available. GH_TOKEN stays — it's needed only by the push and the gh pr calls.
+        git -c core.hooksPath=/dev/null checkout -B "$BRANCH"
+        # Stage ONLY the files the agent reported changing (NUL-delimited list it wrote), never `git add -A`. The repo source the agent read is untrusted, so a stray write outside this set must never be staged, committed or pushed — the push runs git hooks with GH_TOKEN in env.
         if [ ! -s "$FIX_DIR/changed.list" ]; then
           echo "::error::no changed-file manifest from the fix agent"
           exit 1
         fi
-        git add --pathspec-from-file="$FIX_DIR/changed.list" --pathspec-file-nul
-        git commit -m "fix: improve AI readiness (isready.ai)"
-        git push -u origin "$BRANCH" --force-with-lease
+        # --literal-pathspecs: treat every list entry as a literal path, so a file
+        # named like git pathspec magic (e.g. ':(glob)**') can't widen the add set.
+        git --literal-pathspecs add --pathspec-from-file="$FIX_DIR/changed.list" --pathspec-file-nul
+        git -c core.hooksPath=/dev/null commit --no-verify -m "fix: improve AI readiness (isready.ai)"
+        git -c core.hooksPath=/dev/null push --no-verify -u origin "$BRANCH" --force-with-lease
         PR_URL=$(gh pr create \
           --title "Improve AI readiness — isready.ai fixes" \
           --body-file "$FIX_DIR/pr-body.md" \
@@ -227,3 +251,11 @@ runs:
           2>/dev/null || gh pr view "$BRANCH" --json url --jq .url)
         echo "pr-url=$PR_URL" >> "$GITHUB_OUTPUT"
         echo "Opened $PR_URL"
+        # Best-effort: tell isready.ai a PR was opened so it can email the account owner. Never fail the run if the notification call fails.
+        if [ -n "${ISREADYAI_API_KEY:-}" ] && [ -n "$PR_URL" ]; then
+          curl -fsS -m 15 -X POST "$ISREADYAI_API_URL/api/fix-notify" \
+            -H "authorization: Bearer $ISREADYAI_API_KEY" \
+            -H "content-type: application/json" \
+            -d "$(printf '{"repo":"%s","prUrl":"%s","patches":%s}' "$GITHUB_REPOSITORY" "$PR_URL" "${PATCHES:-0}")" \
+            >/dev/null 2>&1 || true
+        fi

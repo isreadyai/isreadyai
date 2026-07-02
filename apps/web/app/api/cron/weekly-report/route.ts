@@ -1,5 +1,6 @@
 import { isScanReport } from '@isreadyai/scanner'
 import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { sendWeeklyReportEmail } from '@/lib/email-monitoring'
 
 // MARK: - GET /api/cron/weekly-report — weekly per-site report emails
@@ -14,8 +15,7 @@ const BATCH = 25
 const STALE_MS = 6 * 24 * 60 * 60 * 1000
 
 export async function GET(request: Request): Promise<Response> {
-  const secret = process.env.CRON_SECRET
-  if (secret === undefined || request.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!isAuthorizedCron(request)) {
     return Response.json({ error: 'unauthorized' }, { status: 401 })
   }
   if (!isSupabaseConfigured()) {

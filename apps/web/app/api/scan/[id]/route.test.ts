@@ -1,4 +1,7 @@
 import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { signScanWriteToken } from '@/lib/scan-write-token'
+
+process.env.PROXY_TOKEN_SECRET = 'scan-test-secret'
 
 // MARK: - Scan [id] route ownership tests
 //
@@ -75,10 +78,10 @@ mock.module('@/lib/workspace.ts', () => ({
 
 const { GET, PATCH } = await import('./route')
 
-function patchRequest(body: unknown): Request {
+function patchRequest(body: unknown, headers: Record<string, string> = {}): Request {
   return new Request(`https://isready.ai/api/scan/${VALID_ID}`, {
     method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...headers },
     body: JSON.stringify(body),
   })
 }
@@ -174,7 +177,23 @@ describe('PATCH /api/scan/[id] ownership', () => {
     expect(lastUpdate).toBeUndefined()
   })
 
-  test('writes an anonymous scan when the host matches', async () => {
+  test('writes an anonymous scan with a valid write token and matching host', async () => {
+    owner = { userId: null, workspaceId: null }
+    record = { id: VALID_ID, report: SCAN_REPORT }
+
+    const response = await PATCH(
+      patchRequest(
+        { siteReport: SITE_REPORT },
+        { 'x-scan-write-token': signScanWriteToken(VALID_ID) },
+      ),
+      { params: Promise.resolve({ id: VALID_ID }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect(lastUpdate).toEqual({ siteReport: SITE_REPORT })
+  })
+
+  test('rejects an anonymous write without a valid write token', async () => {
     owner = { userId: null, workspaceId: null }
     record = { id: VALID_ID, report: SCAN_REPORT }
 
@@ -182,8 +201,8 @@ describe('PATCH /api/scan/[id] ownership', () => {
       params: Promise.resolve({ id: VALID_ID }),
     })
 
-    expect(response.status).toBe(200)
-    expect(lastUpdate).toEqual({ siteReport: SITE_REPORT })
+    expect(response.status).toBe(401)
+    expect(lastUpdate).toBeUndefined()
   })
 
   test('writes an owned scan for its owner', async () => {
@@ -209,6 +228,63 @@ describe('PATCH /api/scan/[id] ownership', () => {
     })
 
     expect(response.status).toBe(400)
+    expect(lastUpdate).toBeUndefined()
+  })
+
+  // M2: only a manager (owner/admin) may overwrite a workspace teammate's report;
+  // a plain member / viewer / billing member is a non-owner → clean 404.
+  for (const role of ['member', 'viewer', 'billing']) {
+    test(`rejects a workspace scan for a non-manager ${role}`, async () => {
+      owner = { userId: null, workspaceId: 'ws-1' }
+      sessionUser = { id: `${role}-1` }
+      memberRole = role
+      record = { id: VALID_ID, report: SCAN_REPORT }
+
+      const response = await PATCH(patchRequest({ siteReport: SITE_REPORT }), {
+        params: Promise.resolve({ id: VALID_ID }),
+      })
+
+      expect(response.status).toBe(404)
+      expect(lastUpdate).toBeUndefined()
+    })
+  }
+
+  for (const role of ['owner', 'admin']) {
+    test(`writes a workspace scan for a manager ${role}`, async () => {
+      owner = { userId: null, workspaceId: 'ws-1' }
+      sessionUser = { id: `${role}-1` }
+      memberRole = role
+      record = { id: VALID_ID, report: SCAN_REPORT }
+
+      const response = await PATCH(patchRequest({ siteReport: SITE_REPORT }), {
+        params: Promise.resolve({ id: VALID_ID }),
+      })
+
+      expect(response.status).toBe(200)
+      expect(lastUpdate).toEqual({ siteReport: SITE_REPORT })
+    })
+  }
+
+  test('rejects an oversized streamed body with no Content-Length (M5)', async () => {
+    record = { id: VALID_ID, report: SCAN_REPORT }
+    // A single chunk just over MAX_BODY_BYTES (4_000_000) with no Content-Length
+    // header: the running-total cap must reject it before it reaches request.json().
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(4_000_001))
+        controller.close()
+      },
+    })
+    const request = new Request(`https://isready.ai/api/scan/${VALID_ID}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: stream,
+      duplex: 'half',
+    } as RequestInit & { duplex: 'half' })
+
+    const response = await PATCH(request, { params: Promise.resolve({ id: VALID_ID }) })
+
+    expect(response.status).toBe(413)
     expect(lastUpdate).toBeUndefined()
   })
 })

@@ -1,20 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { GITHUB_URL } from '@/lib/site'
 import { badgeDataUrl } from '@/lib/badge-svg'
+import type { TCiWorkflowAction } from '@/lib/ci-workflow-snippets'
+import { ECiWorkflowAction } from '@/lib/ci-workflow-snippets'
 import { useCopyToClipboard } from '@/lib/use-copy-to-clipboard'
 import { CopyButton } from '@/components/ui/copy-button'
+import { CiWorkflowSnippet } from '@/components/ci-workflow-snippet'
 
 // MARK: - GitHub Action showcase (Marketplace-style card)
 
-const WORKFLOW_YAML = `- name: AI readiness audit
-  uses: isreadyai/isreadyai@v1
-  with:
-    url: \${{ env.DEPLOY_URL }}
-    threshold: 80`
-
 // Tokenless: the badge is served live for a VERIFIED domain at /badge/<host>.
+// The audit action's `api-key` upload is a separate mechanism: it produces a
+// branch-stable repo badge at /badge/gh/<slug>/<branch> instead.
 const BADGE_MD = '[![AI ready](https://isready.ai/badge/yourdomain.com)](https://isready.ai)'
 const BADGE_PREVIEW = badgeDataUrl(92, 'excellent')
 
@@ -23,6 +23,7 @@ export function GithubShowcase() {
 
   // MARK: - Variables
   const { copied, copy } = useCopyToClipboard()
+  const [workflowAction, setWorkflowAction] = useState<TCiWorkflowAction>(ECiWorkflowAction.AUDIT)
 
   return (
     <div className="border-site-border bg-site-background overflow-hidden rounded-2xl border shadow-2xl">
@@ -40,8 +41,8 @@ export function GithubShowcase() {
           />
         </svg>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-mono text-sm font-semibold">isreadyai — AI readiness audit</p>
-          <p className="text-site-faint truncate text-xs">isreadyai/isreadyai</p>
+          <p className="truncate font-mono text-sm font-semibold">IsReadyAI — readiness audit</p>
+          <p className="text-site-faint truncate text-xs">isreadyai/audit-action</p>
         </div>
         <span className="border-site-accent-dim text-site-accent hidden shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-[10px] tracking-wide uppercase sm:inline-flex">
           {t('marketplaceTag')}
@@ -49,31 +50,21 @@ export function GithubShowcase() {
       </div>
 
       <div className="px-4 py-4 sm:px-5">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-site-muted text-xs font-medium tracking-wide uppercase">
-            {t('usesLabel')}
-          </p>
-          <CopyButton
-            copied={copied === 'yaml'}
-            onCopy={() => void copy(WORKFLOW_YAML, 'yaml')}
-            copyLabel={t('copy')}
-            copiedLabel={t('copied')}
-          />
-        </div>
-        <pre className="bg-site-surface/60 border-site-border/60 mt-2 overflow-x-auto rounded-xl border p-4 font-mono text-xs leading-relaxed sm:text-sm">
-          <code>
-            <span className="text-site-muted">- name:</span> AI readiness audit{'\n'}
-            <span className="text-site-muted">{'  '}uses:</span>{' '}
-            <span className="text-site-accent">isreadyai/isreadyai@v1</span>
-            {'\n'}
-            <span className="text-site-muted">{'  '}with:</span>
-            {'\n'}
-            <span className="text-site-muted">{'    '}url:</span> {'${{ env.DEPLOY_URL }}'}
-            {'\n'}
-            <span className="text-site-muted">{'    '}threshold:</span>{' '}
-            <span className="text-score-good">80</span>
-          </code>
-        </pre>
+        <CiWorkflowSnippet
+          action={workflowAction}
+          onActionChange={setWorkflowAction}
+          switchAriaLabel={t('workflowSwitchAria')}
+          switchOptions={[
+            { value: ECiWorkflowAction.AUDIT, label: t('auditOption') },
+            { value: ECiWorkflowAction.FIX, label: t('fixOption') },
+          ]}
+          copyLabel={t('copy')}
+          copiedLabel={t('copied')}
+          preClassName="bg-site-surface/60"
+        />
+        <p className="text-site-faint mt-3 text-xs leading-snug">
+          {workflowAction === ECiWorkflowAction.AUDIT ? t('auditActionText') : t('fixActionText')}
+        </p>
       </div>
 
       <div className="border-site-border/60 border-t px-4 py-4 sm:px-5">

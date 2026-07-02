@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { envInt, envString } from '@/lib/env'
 
 // MARK: - Proxy token
 
@@ -17,15 +18,37 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
  * everything between the first and last dot is the host (may contain dots).
  */
 
-const TOKEN_TTL_MS = 2 * 60 * 60 * 1000 // 2 hours
+const TOKEN_TTL_MS = envInt('PROXY_TOKEN_TTL_MS', 2 * 60 * 60 * 1000)
+
+// The .env.example placeholder — a deploy that keeps it would sign with a public key.
+const DEFAULT_PROXY_TOKEN_SECRET = envString(
+  'PROXY_TOKEN_DEFAULT_SECRET',
+  'dev-proxy-token-secret-change-in-production',
+)
+
+function isProduction(): boolean {
+  return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
+}
+
+/** The shared HMAC secret, or null when unusable: unset, or the shipped default in production. */
+export function tokenSecret(): string | null {
+  const secret = process.env.PROXY_TOKEN_SECRET
+  if (secret === undefined || secret.length === 0) {
+    return null
+  }
+  if (isProduction() && secret === DEFAULT_PROXY_TOKEN_SECRET) {
+    return null
+  }
+  return secret
+}
 
 function normalizeHost(host: string): string {
   return host.toLowerCase().replace(/^www\./, '')
 }
 
 export function signProxyToken(host: string): string {
-  const secret = process.env.PROXY_TOKEN_SECRET
-  if (!secret) {
+  const secret = tokenSecret()
+  if (secret === null) {
     throw new Error('PROXY_TOKEN_SECRET is not configured')
   }
   const normalized = normalizeHost(host)
@@ -36,8 +59,8 @@ export function signProxyToken(host: string): string {
 }
 
 export function verifyProxyToken(token: string, host: string): boolean {
-  const secret = process.env.PROXY_TOKEN_SECRET
-  if (!secret) {
+  const secret = tokenSecret()
+  if (secret === null) {
     return false
   }
   try {

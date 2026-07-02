@@ -1,6 +1,37 @@
 import { spawn } from 'node:child_process'
 import type { ICommandResult, ISmartAgentCommandExecutor } from '@isreadyai/scanner'
 
+// Least privilege: agent-browser renders untrusted pages, so the child must NOT
+// inherit the server's secrets (Supabase, Stripe, gateway keys). Pass only what a
+// headless browser needs. AGENT_BROWSER_PROVIDER is dropped so the binary stays local.
+const ALLOWED_ENV_KEYS = new Set([
+  'PATH',
+  'HOME',
+  'TMPDIR',
+  'TMP',
+  'TEMP',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'TZ',
+  'NODE_ENV',
+  'DISPLAY',
+  'XAUTHORITY',
+  'XDG_RUNTIME_DIR',
+  'XDG_CONFIG_HOME',
+  'XDG_CACHE_HOME',
+])
+const ALLOWED_ENV_PREFIXES = ['AGENT_BROWSER_', 'PUPPETEER_', 'CHROME']
+
+/** True when an env var may pass to the agent-browser child (i.e. not an app secret). */
+export function isAllowedChildEnvKey(key: string): boolean {
+  // AGENT_BROWSER_PROVIDER would override our local mode, so drop it despite the prefix.
+  if (key === 'AGENT_BROWSER_PROVIDER') {
+    return false
+  }
+  return ALLOWED_ENV_KEYS.has(key) || ALLOWED_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))
+}
+
 const COMMAND_TIMEOUT_MS = 90_000
 // A hard ceiling against a runaway child, NOT a content trim: agent-browser
 // already bounds page content via --content-boundaries/--max-output. It must sit
@@ -15,11 +46,12 @@ export class LocalAgentBrowserExecutor implements ISmartAgentCommandExecutor {
   private readonly session = `isready-${crypto.randomUUID()}`
 
   run(args: string[]): Promise<ICommandResult> {
-    // agent-browser reads AGENT_BROWSER_PROVIDER too and only accepts cloud
-    // providers (browserbase, kernel, …). Our 'local' value selects this local
-    // executor, so strip it from the child env or the binary rejects it.
-    const childEnv = { ...process.env }
-    delete childEnv.AGENT_BROWSER_PROVIDER
+    const childEnv: NodeJS.ProcessEnv = { ...process.env }
+    for (const key of Object.keys(childEnv)) {
+      if (!isAllowedChildEnvKey(key)) {
+        delete childEnv[key]
+      }
+    }
     return new Promise((resolve, reject) => {
       const child = spawn(
         this.executable,

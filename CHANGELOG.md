@@ -23,15 +23,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Monitoring cron de-duplicates by host**: a domain tracked by several workspaces is crawled (deep + Smart Agent) once per tick and the result fanned out to each website's scan row, instead of re-scanning the host per workspace.
 - Website-detail scan history filters on the indexed `scans.host` column instead of parsing every scan URL in JS.
 - Premium-upsell CTA placement is content-aware (top-right beside the title when the card is title-only, otherwise bottom-right); documented in `DESIGN.md`.
+- Diagnostic logging now runs through a shared app `logger` (emoji + timestamped; verbose in dev, errors-only in production) instead of scattered `console.error`; the unused scanner logger scaffolding was removed.
 
 ### Added
 
 #### GitHub Action — fix PR (`fix-action/action.yml`)
 
 - New action that scans a URL, runs an isready.ai AI agent **inside the runner** under a short-lived, metered, inference-scoped token (the real gateway key never leaves isready.ai; your source is never stored), applies AI-readiness fixes, and opens a pull request. Stages only the agent's reported changed files — never `git add -A`. Requires a Pro or Team API key.
+- Writes a job summary explaining every outcome, including the silent 0-change case (lists the non-pass checks, so a green run with no PR reads as "already AI-ready").
+- Emails the API-key owner when it opens a PR (`/api/fix-notify`, Resend; recipient resolved server-side, link pinned to `github.com`).
 
 #### Web app (`apps/web`)
 
+- **Campaign hero copy variants** (`?mkt=1`…`8`): paid/marketing landing URLs select an alternative hero headline + subtitle, rendered on the server so there is no copy flash; the canonical `/` always serves the default copy, so SEO and AI crawlers are unaffected.
 - **My Websites scan inheritance**: adding a site claims your own past scans of that exact host (including anonymous, pre-signup ones); verifying ownership claims all still-unclaimed scans of the host (anonymous and others'), never touching scans already owned by another workspace.
 - GA4 server-side conversions via the Measurement Protocol — `purchase` (from the Stripe webhook, with the `_ga` client/session carried through Stripe metadata) and `sign_up` (from the auth callback); both consent-aware.
 - Cookie-consent banner (Consent Mode v2), footer Privacy / Terms / Sitemap links, and an expanded `sitemap.xml`.
@@ -51,6 +55,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `profiles` billing columns (`plan`, Stripe fields) are writable only by the service role: a `BEFORE UPDATE` trigger blocks any end-user session from changing them, even if a permissive policy is ever added.
 - GA env (`GA_MEASUREMENT_ID`, `GA_MP_API_SECRET`) is passed through Turbo so the server-side GA4 events fire in production.
+
+### Security
+
+#### Web app (`apps/web`)
+
+- **Anonymous email-takeover closed (critical)**: email confirmations are now enforced (`enable_confirmations = true`), so the anonymous→permanent upgrade must verify the new email from its real inbox — the checkout signup shows a "confirm your email" step and proceeds to payment only after the link is followed. An anonymous session can no longer claim a victim's confirmed email and accept that email's workspace invitations; anonymous principals are also rejected from all four invite paths and from API-key creation. **The hosted Supabase project must mirror `enable_confirmations` in its dashboard.**
+- **Open redirect closed**: the auth callback and login form route post-login through a shared `safeNext` guard, so a crafted `?next` / `?redirect` (external, protocol-relative `//evil.tld`, or backslash `/\evil.tld`) falls back to `/dashboard` instead of redirecting off-site.
+- **Proxy relay hardened** (`/api/proxy`): the same-site check now matches the host exactly, so a look-alike `http://localhost.evil.tld` no longer passes; a deploy that keeps the placeholder `PROXY_TOKEN_SECRET` fails closed in production.
+- **Turnstile fails closed in production**: a missing `TURNSTILE_SECRET_KEY` skips verification only in local/dev — in production the contact form rejects rather than silently accepting (network/5xx already fail closed). Added the variable to the root `.env.example`.
+- **Trusted client IP for rate-limit keys**: the shared `clientIp` prefers the platform-set `x-real-ip` and the rightmost forwarded hop, so a spoofed `x-forwarded-for` can no longer evade per-IP limits or frame another IP; de-duplicated with the scan route's helper.
+- **Security response headers**: added `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy` to every response (a CSP with `frame-ancestors` follows).
+- **CI repo-badge uploads now require GitHub OIDC**: `/api/ci-report` verifies an Actions OIDC token (issuer, audience, RS256, expiry via JWKS) and matches its immutable `repository_id` claim before registering a repo, so a premium key can no longer squat another repo's badge. The audit action mints the token automatically — **callers must grant the job `permissions: id-token: write`** (documented in the README).
+- **API keys honour their lifetime**: `verifyApiKey` / `findApiKeyById` now reject an elapsed `expires_at` and stamp `last_used_at` (throttled, best-effort), rather than checking only revocation.
+- **AI cost guards**: the solve-inference proxy rejects oversized `messages` payloads (413), and `/api/mcp` caps JSON-RPC batch size and applies a per-key rate limit, so a paid key can't drive unbounded inference or scanner load.
+- **Anonymous report tampering closed**: persisting an in-browser deep scan onto an anonymous scan now requires a per-scan write-token (a stateless HMAC the creating tab holds), so a shared report link no longer lets any visitor overwrite the report.
+- **Content-Security-Policy (report-only)**: added a `Content-Security-Policy-Report-Only` header to surface violations against GTM / Stripe / Turnstile / Supabase before tuning it to enforcing; clickjacking is already enforced by `X-Frame-Options`.
+- **Smart Agent browser least-privilege**: the local agent-browser child receives only browser-relevant environment variables, no longer inheriting server secrets (Supabase / Stripe / gateway keys).
+- **Premium entitlements revoked on payment failure**: `planFromStatus` now drops `unpaid` / `paused` / `incomplete` subscriptions to the free plan (only `past_due` keeps a short retry grace), and the monitoring cron re-checks the owner's current plan so a downgraded workspace stops running paid deep / Smart-Agent scans.
+- **Constant-time cron auth**: the three `/api/cron/*` endpoints verify `CRON_SECRET` with `timingSafeEqual` (shared `isAuthorizedCron`) instead of a timing-leaky `!==`.
+- **Report mutation is editor-gated**: PATCH of an owned scan now requires a workspace manager/owner role (matching DELETE) — viewers and billing members can no longer overwrite a report.
+- **Body-size limits enforced on actual bytes**: `/api/scan/[id]` and `/smart-deep` cap the streamed request body (and decompressed size) rather than trusting `Content-Length`, closing a chunked-request memory-exhaustion vector.
+- **AI cost guards tightened**: the solve-inference cap now covers the full forwarded body (including `tools`, not just `messages`), and `/api/mcp` charges the rate limit per batch item.
+- **API-key quota enforced**: `createApiKey` rejects over the plan's `maxApiKeys`; anonymous principals are blocked from key creation and from accepting/listing workspace invitations.
+- **Seat limit re-checked at invitation acceptance**: closes the race where a Stripe downgrade between invite and accept could exceed the seat entitlement.
+- **Email-report spam-relay + DoS closed**: `/api/email-report` now requires Turnstile (widget added to the form), and both it and `/api/contact` consume the shared global rate-limit bucket only after a successful captcha, so unsolved requests can't exhaust it.
+- **Chat-thread scope authorization**: an unauthorized `websiteId` is downgraded to report scope instead of being persisted, and AI fix-plan generation verifies the report's host belongs to the caller's workspace.
+- **Self-hosted trusted-proxy gate**: `TRUST_PROXY_HEADERS=false` makes `clientIp` ignore spoofable forwarding headers for deployments without a trusted reverse proxy.
+- **No anonymous relay token**: `/api/scan` no longer returns a `proxyToken` (it was unused — each report page issues its own scoped token server-side), so the deep-scan relay token can no longer be obtained anonymously.
+- **CSP drops `unsafe-eval`**: removed the unused `unsafe-eval` from the (report-only) `script-src`, shrinking the surface a future XSS could abuse.
+
+#### GitHub Action — fix PR (`fix-action`)
+
+- **Pathspec-magic hardening**: the staging step uses `git --literal-pathspecs`, and the agent sandbox rejects writing a file whose path starts with `:`, so a prompt-injected agent can't widen the committed file set via git pathspec magic.
+- **Wider secret redaction**: `redactSecrets` now also masks connection-string passwords (`scheme://user:pass@host`) and more credential keywords (CRED, SIGNING_KEY, OAUTH, DSN, …) before file content reaches the model.
+- **Git hooks neutralized during commit/push**: the PR step runs `git` with `core.hooksPath=/dev/null` and `--no-verify`, so a poisoned repo's hooks can't execute with `GH_TOKEN` in the environment.
+
+#### Scanner engine (`@isreadyai/scanner`)
+
+- **ReDoS fixed in robots matching**: `pathMatches` uses a linear, non-backtracking glob matcher, so a crafted `robots.txt` path rule can no longer stall the scanner.
+
+#### Supabase package (`@isreadyai/supabase`)
+
+- **Rate-limit functions locked to the service role**: revoked `EXECUTE` on `consume_rate_limit` and `consume_metered_run` from `anon` / `authenticated` / `PUBLIC` — the app only ever calls them through the service role — closing an unauthenticated path to saturate a shared rate-limit bucket (e.g. `contact:global`) and deny every rate-limited endpoint. Added a pgTAP regression.
+- **Workspace always keeps an owner**: a deferred constraint trigger (`workspace_owner_guard`) prevents removing, demoting or suspending the last active owner, closing the race where two concurrent removals could orphan a workspace. Added a pgTAP regression.
+- **Tightened auth redirect allowlist**: dropped the shared `https://*.vercel.app/auth/callback` wildcard from the local `config.toml` (preview/production redirect URLs are configured in the Supabase dashboard).
+- **`search_path` pinned on SECURITY DEFINER functions**: a migration sets `search_path = public` on every definer function (defense-in-depth against search-path hijacking).
 
 ## [0.1.0] - 2026-06-15
 

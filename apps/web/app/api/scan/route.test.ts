@@ -113,8 +113,8 @@ describe('POST /api/scan rate limiting', () => {
     const body = (await res.json()) as { id: string; status: string; proxyToken?: string }
     expect(body.id).toBe('scan-1')
     expect(body.status).toBe('queued')
-    // The route mints a host-bound proxy token alongside the scan id.
-    expect(typeof body.proxyToken).toBe('string')
+    // No relay token here — it's issued server-side by the report page only.
+    expect(body.proxyToken).toBeUndefined()
   })
 
   test('passes at exactly one below the limit', async () => {

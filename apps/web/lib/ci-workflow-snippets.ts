@@ -49,7 +49,12 @@ const AUDIT_LINES: readonly TCodeLine[] = [
     { text: 'isreadyai/audit-action@v1', tone: ECodeTone.ACTION },
   ],
   [{ text: '    with:', tone: ECodeTone.KEY }],
-  [{ text: '      url:', tone: ECodeTone.KEY }, { text: ' ${{ env.DEPLOY_URL }}' }],
+  [
+    { text: '      url:', tone: ECodeTone.KEY },
+    { text: ' ${{ env.DEPLOY_URL }}' },
+    { text: ' ' },
+    { text: '# define DEPLOY_URL yourself, e.g. env: DEPLOY_URL: https://yoursite.com', tone: ECodeTone.COMMENT },
+  ],
   [
     { text: '      threshold:', tone: ECodeTone.KEY },
     { text: ' ' },
@@ -86,7 +91,12 @@ const FIX_LINES: readonly TCodeLine[] = [
     { text: 'isreadyai/fix-action@v1', tone: ECodeTone.ACTION },
   ],
   [{ text: '    with:', tone: ECodeTone.KEY }],
-  [{ text: '      url:', tone: ECodeTone.KEY }, { text: ' ${{ env.DEPLOY_URL }}' }],
+  [
+    { text: '      url:', tone: ECodeTone.KEY },
+    { text: ' ${{ env.DEPLOY_URL }}' },
+    { text: ' ' },
+    { text: '# define DEPLOY_URL yourself, e.g. env: DEPLOY_URL: https://yoursite.com', tone: ECodeTone.COMMENT },
+  ],
   [
     { text: '      api-key:', tone: ECodeTone.KEY },
     { text: ' ' },

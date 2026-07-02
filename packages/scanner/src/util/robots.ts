@@ -209,17 +209,47 @@ export function hasExplicitGroup(robots: IRobots, token: string): boolean {
 
 // MARK: - internal
 
-/** Match a robots path pattern (supports `*` wildcard and `$` end anchor). */
+/**
+ * Match a robots path pattern (`*` = any run, trailing `$` = end-anchor, else prefix).
+ *
+ * Linear two-pointer glob via indexOf — no regex, so a crafted rule/path with many
+ * wildcards can't trigger catastrophic backtracking (the scanner fetches untrusted
+ * robots.txt). Interior segments match greedily at the earliest position, which is
+ * optimal for existence and leaves the most room for an end-anchored tail.
+ */
 function pathMatches(pattern: string, path: string): boolean {
   const anchored = pattern.endsWith('$')
   const body = anchored ? pattern.slice(0, -1) : pattern
-  const parts = body.split('*').map(escapeRegExp)
-  const re = new RegExp(`^${parts.join('.*')}${anchored ? '$' : ''}`)
-  return re.test(path)
-}
+  const segments = body.split('*') // always length >= 1
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  // Literal text before the first `*` is anchored to the start of the path.
+  const first = segments[0] ?? ''
+  if (!path.startsWith(first)) {
+    return false
+  }
+  let pos = first.length
+
+  for (let i = 1; i < segments.length - 1; i++) {
+    const seg = segments[i]
+    if (!seg) {
+      continue // consecutive `*` — no constraint
+    }
+    const at = path.indexOf(seg, pos)
+    if (at === -1) {
+      return false
+    }
+    pos = at + seg.length
+  }
+
+  if (segments.length === 1) {
+    return anchored ? pos === path.length : true // no `*`: prefix, or exact when anchored
+  }
+
+  const last = segments[segments.length - 1] ?? ''
+  if (anchored) {
+    return path.length - last.length >= pos && path.endsWith(last)
+  }
+  return last.length === 0 || path.indexOf(last, pos) !== -1
 }
 
 function truncate(s: string): string {

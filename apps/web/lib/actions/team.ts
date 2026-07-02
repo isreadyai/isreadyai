@@ -387,6 +387,19 @@ async function finalizeInvitationAcceptance(
   invite: IPendingInvite,
   userId: string,
 ): Promise<TActionResult> {
+  // Re-check seats at accept time, not just when the invite was sent: the owner
+  // may have downgraded to a smaller plan since. A re-accepting existing member
+  // consumes no new seat, so skip the check for them (keeps re-accept idempotent).
+  if (!(await isActiveMember(service, invite.workspace_id, userId))) {
+    const ownerPlan = await ownerPlanForWorkspace(service, invite.workspace_id)
+    const seatLimit = resolveEntitlements(ownerPlan).maxMembers
+    // This invite is still counted as a pending seat, so accepting it is net-zero
+    // on the total — reject only once current usage already exceeds the limit.
+    if ((await seatsUsed(service, invite.workspace_id)) > seatLimit) {
+      return { ok: false, error: 'seat_limit' }
+    }
+  }
+
   const { error: memberError } = await service.from('workspace_members').insert({
     workspace_id: invite.workspace_id,
     user_id: userId,
@@ -424,7 +437,8 @@ export async function acceptInvitation(rawToken: string): Promise<TActionResult>
   const {
     data: { user },
   } = await session.auth.getUser()
-  if (user === null) {
+  // Anonymous principals carry no verified email, so never let one match an invite.
+  if (user === null || user.is_anonymous === true) {
     return { ok: false, error: 'unauthenticated' }
   }
 
@@ -465,7 +479,11 @@ export async function listReceivedInvitations(): Promise<IReceivedInvitation[]> 
   const {
     data: { user },
   } = await session.auth.getUser()
-  const email = user?.email?.trim().toLowerCase()
+  // Anonymous principals carry no verified email, so never surface invites to one.
+  if (user === null || user.is_anonymous === true) {
+    return []
+  }
+  const email = user.email?.trim().toLowerCase()
   if (email === undefined || email === '') {
     return []
   }
@@ -522,7 +540,8 @@ export async function acceptInvitationById(invitationId: string): Promise<TActio
   const {
     data: { user },
   } = await session.auth.getUser()
-  if (user === null) {
+  // Anonymous principals carry no verified email, so never let one match an invite.
+  if (user === null || user.is_anonymous === true) {
     return { ok: false, error: 'unauthenticated' }
   }
 
@@ -539,7 +558,8 @@ export async function declineInvitation(invitationId: string): Promise<TActionRe
   const {
     data: { user },
   } = await session.auth.getUser()
-  if (user === null) {
+  // Anonymous principals carry no verified email, so never let one match an invite.
+  if (user === null || user.is_anonymous === true) {
     return { ok: false, error: 'unauthenticated' }
   }
 
@@ -599,6 +619,21 @@ async function seatsUsed(service: TServiceClient, workspaceId: string): Promise<
       .gt('expires_at', new Date().toISOString()),
   ])
   return (members ?? 0) + (pending ?? 0)
+}
+
+/** True when the user already holds an active membership in the workspace. */
+async function isActiveMember(
+  service: TServiceClient,
+  workspaceId: string,
+  userId: string,
+): Promise<boolean> {
+  const { count } = await service
+    .from('workspace_members')
+    .select('id', { count: 'exact', head: true })
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', userId)
+    .eq('status', 'active')
+  return (count ?? 0) > 0
 }
 
 async function ownerCount(service: TServiceClient, workspaceId: string): Promise<number> {
