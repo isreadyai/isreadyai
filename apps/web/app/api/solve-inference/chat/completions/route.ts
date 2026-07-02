@@ -18,6 +18,7 @@ import { solveSecret, verifySolveToken } from '@/lib/solve-token'
 export const maxDuration = 120
 
 const MAX_OUTPUT_TOKENS = 4096
+const MAX_INPUT_BYTES = 100_000
 const GATEWAY_BASE_URL = process.env.AI_GATEWAY_BASE_URL ?? 'https://ai-gateway.vercel.sh/v1'
 
 // Only these request fields are forwarded. Everything else (notably `n`, which
@@ -33,6 +34,17 @@ const ALLOWED_FIELDS = [
   'tool_choice',
 ] as const
 
+/** Selects only the whitelisted request fields this proxy forwards upstream. */
+function pickAllowed(body: Record<string, unknown>): Record<string, unknown> {
+  const forwarded: Record<string, unknown> = {}
+  for (const field of ALLOWED_FIELDS) {
+    if (body[field] !== undefined) {
+      forwarded[field] = body[field]
+    }
+  }
+  return forwarded
+}
+
 /**
  * Forwards only whitelisted fields, pins the model, caps output, and forces
  * `n` to 1. The runner cannot widen scope via the model, a huge completion, or
@@ -43,12 +55,7 @@ export function sanitizeInferenceBody(
   model: string,
   maxOutputCap: number,
 ): Record<string, unknown> {
-  const forwarded: Record<string, unknown> = {}
-  for (const field of ALLOWED_FIELDS) {
-    if (body[field] !== undefined) {
-      forwarded[field] = body[field]
-    }
-  }
+  const forwarded = pickAllowed(body)
   const requestedMax = typeof body.max_tokens === 'number' ? body.max_tokens : maxOutputCap
   forwarded.model = model
   forwarded.max_tokens = Math.min(requestedMax, maxOutputCap)
@@ -60,8 +67,18 @@ export function sanitizeInferenceBody(
 // but the 15-minute token TTL bounds total exposure regardless.
 const callCounts = new Map<string, number>()
 
-function jsonError(code: string, status: number): Response {
-  return Response.json({ error: code }, { status })
+function jsonError(code: string, status: number, extra?: Record<string, unknown>): Response {
+  return Response.json({ error: code, ...extra }, { status })
+}
+
+/** Byte length of the serialized forwarded input (messages + tools + other whitelisted fields). */
+export function forwardedInputBytes(body: Record<string, unknown>): number {
+  return JSON.stringify(pickAllowed(body)).length
+}
+
+/** True when the serialized forwarded input (messages + tools + other whitelisted fields) exceeds the cap. */
+export function inputTooLarge(body: Record<string, unknown>): boolean {
+  return forwardedInputBytes(body) > MAX_INPUT_BYTES
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -89,6 +106,10 @@ export async function POST(request: Request): Promise<Response> {
     body = (await request.json()) as Record<string, unknown>
   } catch {
     return jsonError('invalid_body', 400)
+  }
+  const gotBytes = forwardedInputBytes(body)
+  if (gotBytes > MAX_INPUT_BYTES) {
+    return jsonError('request_too_large', 413, { max_bytes: MAX_INPUT_BYTES, got_bytes: gotBytes })
   }
 
   const forwarded = sanitizeInferenceBody(body, claims.model, MAX_OUTPUT_TOKENS)

@@ -9,14 +9,13 @@ import {
   runWebSmartDeepAuditFromUrls,
 } from '@/lib/smart-agent/run-smart-deep'
 import { resolveWorkspaceContext } from '@/lib/workspace-context'
-
-// Each page is a real headless-browser session, so allow a long budget.
-export const maxDuration = 300
+import { drainCapped, PayloadTooLargeError } from '@/lib/stream-cap'
 
 const ID_RE = /^[0-9a-f-]{36}$/i
-// Each pass is a multi-page headless run; keep the per-key budget tight.
 const RATE_WINDOW_MS = 60_000
 const RATE_LIMIT = 5
+const MAX_BODY_BYTES = 256_000
+const MAX_PAGE_URLS = 200
 
 /**
  * Authorizes a deep pass for the caller's scope. A scan is in scope when it is
@@ -74,7 +73,15 @@ export async function POST(
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
-  const pageUrls = await parsePageUrls(request)
+  let pageUrls: string[]
+  try {
+    pageUrls = await parsePageUrls(request)
+  } catch (error) {
+    if (error instanceof PayloadTooLargeError) {
+      return NextResponse.json({ error: 'payload_too_large' }, { status: 413 })
+    }
+    return NextResponse.json({ error: 'invalid_body' }, { status: 400 })
+  }
 
   const store = await getScanStore()
   const record = await store.get(id)
@@ -145,14 +152,27 @@ async function resolveAccess(request: Request): Promise<TAccess> {
   return { ok: false }
 }
 
-/** Pulls the optional client-supplied page URLs from the JSON body; [] for none. */
-async function parsePageUrls(request: Request): Promise<string[]> {
+/**
+ * Pulls the optional client-supplied page URLs from the JSON body; [] for none.
+ * Caps the streamed body (the list is small and Content-Length is spoofable) and
+ * the URL count; throws {@link PayloadTooLargeError} past the byte cap.
+ */
+export async function parsePageUrls(request: Request): Promise<string[]> {
+  if (Number(request.headers.get('content-length') ?? '0') > MAX_BODY_BYTES) {
+    throw new PayloadTooLargeError()
+  }
+  if (request.body === null) {
+    return []
+  }
+  const raw = await drainCapped(request.body, MAX_BODY_BYTES)
   try {
-    const body = (await request.json()) as { pageUrls?: unknown }
+    const body = JSON.parse(new TextDecoder().decode(raw)) as { pageUrls?: unknown }
     if (!Array.isArray(body.pageUrls)) {
       return []
     }
-    return body.pageUrls.filter((url): url is string => typeof url === 'string' && url.length > 0)
+    return body.pageUrls
+      .filter((url): url is string => typeof url === 'string' && url.length > 0)
+      .slice(0, MAX_PAGE_URLS)
   } catch {
     return []
   }

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@isreadyai/supabase'
 import type { TActionResult } from '@/lib/action-result'
 import { hashKey } from '@/lib/api-keys'
+import { checkQuota } from '@/lib/entitlements'
 import type { IApiKey } from '@/lib/api-key-types'
 import { planOrFree } from '@/lib/plans'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -44,6 +45,11 @@ export async function createApiKey(label: string): Promise<TCreateApiKeyResult> 
   if (user === null) {
     return { ok: false, error: 'unauthenticated' }
   }
+  // Defense-in-depth: an anonymous session is not a durable identity and must never
+  // mint a workspace API key, even if it somehow holds a manager role.
+  if (user.is_anonymous === true) {
+    return { ok: false, error: 'anonymous_forbidden' }
+  }
 
   const { data: profile } = await session
     .from('profiles')
@@ -69,6 +75,17 @@ export async function createApiKey(label: string): Promise<TCreateApiKeyResult> 
   // The snapshot plan follows the workspace owner, not the minting admin's plan.
   const service = await createServiceClient()
   const ownerPlan = await ownerPlanForWorkspace(service, workspaceId)
+  // Cap workspace keys at the owner plan's limit, counting only live (non-revoked)
+  // keys — mirrors addTrackedDomain's checkQuota gate.
+  const { count } = await service
+    .from('api_keys')
+    .select('id', { count: 'exact', head: true })
+    .eq('workspace_id', workspaceId)
+    .is('revoked_at', null)
+  if (!checkQuota(ownerPlan, 'maxApiKeys', count ?? 0).allowed) {
+    return { ok: false, error: 'upgrade_required' }
+  }
+
   const { error } = await service.from('api_keys').insert({
     user_id: user.id,
     created_by: user.id,

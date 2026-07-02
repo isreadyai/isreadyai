@@ -10,13 +10,14 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client'
 
 // MARK: - Inline guest → account registration before checkout (passwordless)
 
-/** Guest-to-account signup form before checkout (passwordless). */
+/** Guest-to-account signup form before checkout (passwordless, email-verified). */
 export function CheckoutSignup({ plan }: { plan: 'pro' | 'team' }) {
   const t = useTranslations('checkout')
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [terms, setTerms] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const loginHref = `/login?redirect=${encodeURIComponent(`/checkout?plan=${plan}`)}`
 
@@ -29,85 +30,104 @@ export function CheckoutSignup({ plan }: { plan: 'pro' | 'team' }) {
     setSubmitting(true)
     setError(null)
     const supabase = createBrowserSupabaseClient()
-    // Attaches an email to the anonymous user → upgrades it to a real account,
-    // preserving its guest scans. No password (magic-link for future logins).
-    const { error: err } = await supabase.auth.updateUser({
-      email: email.trim(),
-      data: { display_name: name.trim() },
-    })
+    // Email confirmations are ON: updateUser sends a verification link and does
+    // NOT trust the new email until it's confirmed from the real inbox — this is
+    // what prevents an anonymous session from claiming someone else's email. The
+    // link returns through the callback to checkout, which then proceeds to Stripe.
+    const next = `/checkout?plan=${plan}`
+    const { error: err } = await supabase.auth.updateUser(
+      { email: email.trim(), data: { display_name: name.trim() } },
+      {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
+    )
     if (err !== null) {
       // The email already belongs to an account: log in, then back to checkout.
       window.location.href = loginHref
       return
     }
-    // Email set → re-enter /checkout, which now proceeds straight to Stripe.
-    window.location.href = `/checkout?plan=${plan}`
+    setSent(true)
   }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-16">
       <Card className="border-site-border bg-site-surface/60 border">
         <Card.Content className="space-y-5">
-          <div>
-            <p className="text-site-secondary font-mono text-xs tracking-wide uppercase">
-              {t('kicker', { plan: t(`plan.${plan}`) })}
-            </p>
-            <h1 className="mt-2 text-xl font-semibold">{t('title')}</h1>
-            <p className="text-site-muted mt-1 text-sm">{t('subtitle')}</p>
-          </div>
-
-          <form onSubmit={(e) => void submit(e)} className="space-y-3">
-            <TextInput
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('emailPlaceholder')}
-              aria-label={t('emailPlaceholder')}
-              required
-              surface="subtle"
-            />
-            <TextInput
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('namePlaceholder')}
-              aria-label={t('namePlaceholder')}
-              required
-              surface="subtle"
-            />
-            <label className="text-site-muted flex items-start gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={terms}
-                onChange={(e) => setTerms(e.target.checked)}
-                className="accent-site-accent mt-0.5"
-              />
-              <span>
-                {t('terms')}{' '}
-                <Link href="/terms-and-conditions" className="text-site-accent hover:underline">
-                  {t('termsLink')}
-                </Link>{' '}
-                ·{' '}
-                <Link href="/privacy" className="text-site-accent hover:underline">
-                  {t('privacyLink')}
-                </Link>
-              </span>
-            </label>
-            {error !== null ? (
-              <p className="text-danger text-sm" role="alert">
-                {error}
+          {sent ? (
+            <div className="space-y-3">
+              <p className="text-site-secondary font-mono text-xs tracking-wide uppercase">
+                {t('kicker', { plan: t(`plan.${plan}`) })}
               </p>
-            ) : null}
-            <Button type="submit" variant="primary" isDisabled={submitting} className="w-full">
-              {submitting ? t('submitting') : t('continue')}
-            </Button>
-          </form>
+              <h1 className="text-xl font-semibold">{t('checkEmailTitle')}</h1>
+              <p className="text-site-muted text-sm">
+                {t('checkEmailBody', { email: email.trim() })}
+              </p>
+              <p className="text-site-faint text-xs">{t('checkEmailHint')}</p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <p className="text-site-secondary font-mono text-xs tracking-wide uppercase">
+                  {t('kicker', { plan: t(`plan.${plan}`) })}
+                </p>
+                <h1 className="mt-2 text-xl font-semibold">{t('title')}</h1>
+                <p className="text-site-muted mt-1 text-sm">{t('subtitle')}</p>
+              </div>
 
-          <p className="text-site-faint text-center text-xs">
-            {t('haveAccount')}{' '}
-            <a href={loginHref} className="text-site-accent hover:underline">
-              {t('login')}
-            </a>
-          </p>
+              <form onSubmit={(e) => void submit(e)} className="space-y-3">
+                <TextInput
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('emailPlaceholder')}
+                  aria-label={t('emailPlaceholder')}
+                  required
+                  surface="subtle"
+                />
+                <TextInput
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t('namePlaceholder')}
+                  aria-label={t('namePlaceholder')}
+                  required
+                  surface="subtle"
+                />
+                <label className="text-site-muted flex items-start gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={terms}
+                    onChange={(e) => setTerms(e.target.checked)}
+                    className="accent-site-accent mt-0.5"
+                  />
+                  <span>
+                    {t('terms')}{' '}
+                    <Link href="/terms-and-conditions" className="text-site-accent hover:underline">
+                      {t('termsLink')}
+                    </Link>{' '}
+                    ·{' '}
+                    <Link href="/privacy" className="text-site-accent hover:underline">
+                      {t('privacyLink')}
+                    </Link>
+                  </span>
+                </label>
+                {error !== null ? (
+                  <p className="text-danger text-sm" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+                <Button type="submit" variant="primary" isDisabled={submitting} className="w-full">
+                  {submitting ? t('submitting') : t('continue')}
+                </Button>
+              </form>
+
+              <p className="text-site-faint text-center text-xs">
+                {t('haveAccount')}{' '}
+                <a href={loginHref} className="text-site-accent hover:underline">
+                  {t('login')}
+                </a>
+              </p>
+            </>
+          )}
         </Card.Content>
       </Card>
     </main>

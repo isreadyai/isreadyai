@@ -46,11 +46,14 @@ function isSameSite(value: string | null): boolean {
   if (value === null) {
     return false
   }
-  const origin = safeOrigin(value)
-  if (origin === null) {
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
     return false
   }
-  return origin === SITE_ORIGIN || origin.startsWith('http://localhost')
+  // Exact host: a prefix check would admit `http://localhost.evil.tld`.
+  return url.origin === SITE_ORIGIN || url.hostname === 'localhost' || url.hostname === '127.0.0.1'
 }
 
 function safeOrigin(value: string): string | null {
