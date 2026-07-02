@@ -3,13 +3,14 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { gaSessionFromCookies, sendGaEvent } from '@/lib/analytics-server'
+import { safeNext } from '@/lib/safe-next'
 
 // MARK: - GET /auth/callback — exchange the OAuth/magic-link code for a session
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const next = safeNext(searchParams.get('next'))
 
   if (code !== null) {
     const supabase = await createServerSupabaseClient()

@@ -266,14 +266,29 @@ To audit a branch before it ships, set `command` to boot the branch environment;
     api-key: ${{ secrets.ISREADYAI_API_KEY }} # Pro/Team: uploads the report + repo badge
 ```
 
-| Input       | Required | Default              | Purpose                                                                                                                                               |
-| ----------- | -------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `url`       | yes      | —                    | URL to audit (strict `http(s)://` allowlist). With `command` set, the local URL the env serves.                                                       |
-| `threshold` | no       | `70`                 | Minimum acceptable score; the step fails below it.                                                                                                    |
-| `command`   | no       | `''`                 | Command run with `bash -c` to boot the branch env before scanning. **Only use literal, trusted values** — never wire it from PR/fork-controlled data. |
-| `api-key`   | no       | `''`                 | isready.ai API key (repo secret). When set, uploads an authenticated CI report and prints a branch-stable repo badge. Pro/Team only.                  |
-| `api-url`   | no       | `https://isready.ai` | API origin; override for self-hosted deployments.                                                                                                     |
-| `report`    | no       | `true`               | Set `false` to keep a keyed run local-only (no upload, no badge).                                                                                     |
+> **Keyed runs require OIDC.** The authenticated upload proves the workflow runs inside the repository it registers — so no one else can claim your repo's badge. Grant the job `id-token: write`; without it the upload is skipped (the audit itself still runs):
+>
+> ```yaml
+> jobs:
+>   audit:
+>     permissions:
+>       id-token: write # isready.ai verifies repo ownership via the OIDC token
+>       contents: read
+>     steps:
+>       - uses: isreadyai/isreadyai@v1
+>         with:
+>           url: ${{ env.DEPLOY_URL }}
+>           api-key: ${{ secrets.ISREADYAI_API_KEY }}
+> ```
+
+| Input       | Required | Default              | Purpose                                                                                                                                                                                                |
+| ----------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `url`       | yes      | —                    | URL to audit (strict `http(s)://` allowlist). With `command` set, the local URL the env serves.                                                                                                        |
+| `threshold` | no       | `70`                 | Minimum acceptable score; the step fails below it.                                                                                                                                                     |
+| `command`   | no       | `''`                 | Command run with `bash -c` to boot the branch env before scanning. **Only use literal, trusted values** — never wire it from PR/fork-controlled data.                                                  |
+| `api-key`   | no       | `''`                 | isready.ai API key (repo secret). When set, uploads an authenticated CI report and prints a branch-stable repo badge. Pro/Team only; the job must grant `id-token: write` (OIDC repo-ownership proof). |
+| `api-url`   | no       | `https://isready.ai` | API origin; override for self-hosted deployments.                                                                                                                                                      |
+| `report`    | no       | `true`               | Set `false` to keep a keyed run local-only (no upload, no badge).                                                                                                                                      |
 
 Outputs `score` and `grade` for downstream steps, plus `badge` (a branch-stable repo-badge Markdown snippet) and `report-url` (the shareable report) when a report is uploaded. The action sends an anonymous, PII-free usage ping (host + score only); opt out with `TELEMETRY=false`. The standard scan is free for everyone, including open-source projects; the authenticated CI report + repo badge require a Pro or Team plan.
 

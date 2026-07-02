@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 import { EMAIL_REPORT_INPUT_ID } from '@/lib/email-capture'
 import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
+import { TurnstileWidget } from '@/components/auth/turnstile-widget'
+import { TURNSTILE_SITE_KEY } from '@/lib/turnstile'
 
 // MARK: - Email-gated report delivery
 
@@ -15,6 +17,15 @@ export function EmailReportForm({ id }: { id: string }) {
 
   const [phase, setPhase] = useState<TPhase>('idle')
   const [email, setEmail] = useState('')
+  const [token, setToken] = useState<string | null>(null)
+  const [resetSignal, setResetSignal] = useState(0)
+
+  const captchaOn = TURNSTILE_SITE_KEY !== ''
+
+  function recycleCaptcha(): void {
+    setToken(null)
+    setResetSignal((value) => value + 1)
+  }
 
   async function submit(event: React.FormEvent): Promise<void> {
     event.preventDefault()
@@ -23,14 +34,17 @@ export function EmailReportForm({ id }: { id: string }) {
       const response = await fetch('/api/email-report', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id, email }),
+        body: JSON.stringify({ id, email, turnstileToken: token ?? undefined }),
       })
+      // Turnstile tokens are single-use; force a fresh widget for any retry.
+      recycleCaptcha()
       if (response.status === 503) {
         setPhase('unconfigured')
         return
       }
       setPhase(response.ok ? 'sent' : 'error')
     } catch {
+      recycleCaptcha()
       setPhase('error')
     }
   }
@@ -54,10 +68,23 @@ export function EmailReportForm({ id }: { id: string }) {
           surface="subtle"
           className="flex-1"
         />
-        <Button type="submit" variant="primary" isDisabled={phase === 'sending'}>
+        <Button
+          type="submit"
+          variant="primary"
+          isDisabled={phase === 'sending' || (captchaOn && token === null)}
+        >
           {phase === 'sending' ? t('emailSending') : t('emailCta')}
         </Button>
       </div>
+      {captchaOn ? (
+        <div className="mt-3">
+          <TurnstileWidget
+            siteKey={TURNSTILE_SITE_KEY}
+            onToken={setToken}
+            resetSignal={resetSignal}
+          />
+        </div>
+      ) : null}
       {phase === 'error' ? (
         <p className="text-danger mt-2 text-sm" role="alert">
           {t('emailError')}

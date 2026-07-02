@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { clientIp } from '@/lib/client-ip'
 import { consumeRateLimit } from '@/lib/rate-limit'
 import { getScanStore } from '@/lib/scan-store'
 import { emailConfigured, saveLead, sendReportEmail } from '@/lib/email-report'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { verifyTurnstile } from '@/lib/turnstile-verify'
 import { getMemberRole } from '@/lib/workspace'
 
 // MARK: - POST /api/email-report
@@ -13,9 +15,10 @@ import { getMemberRole } from '@/lib/workspace'
  * Markdown via Resend. Anonymous (public-by-id) scans keep the lead-capture UX;
  * owned scans are private — a scan owned by EITHER a user or a workspace may only
  * be emailed by that user or an active member of that workspace, so an attacker
- * can't enumerate ids to relay reports to arbitrary addresses. Both a per-IP and a
- * global cap bound Resend cost/reputation. 503 when no email provider is
- * configured — the UI then degrades to direct downloads.
+ * can't enumerate ids to relay reports to arbitrary addresses. A Turnstile check
+ * plus a per-IP and a global cap bound Resend cost/reputation — the global bucket
+ * is spent only after the captcha passes so unsolved requests can't exhaust it.
+ * 503 when no email provider is configured — the UI then degrades to direct downloads.
  */
 
 export const maxDuration = 30
@@ -28,31 +31,8 @@ const GLOBAL_LIMIT = 200
 const BodySchema = z.object({
   id: z.uuid(),
   email: z.email().max(254),
+  turnstileToken: z.string().max(4096).optional(),
 })
-
-/**
- * Trusted client IP. `x-real-ip` is platform-set and unspoofable; the
- * `x-forwarded-for` fallback takes the RIGHTMOST hop (our proxy), since leftmost
- * entries are caller-supplied. Local dev shares the single 'local' bucket.
- */
-function clientIp(request: Request): string {
-  const realIp = request.headers.get('x-real-ip')?.trim()
-  if (realIp !== undefined && realIp !== '') {
-    return realIp
-  }
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded !== null) {
-    const hops = forwarded
-      .split(',')
-      .map((hop) => hop.trim())
-      .filter((hop) => hop !== '')
-    const trusted = hops[hops.length - 1]
-    if (trusted !== undefined) {
-      return trusted
-    }
-  }
-  return 'local'
-}
 
 /**
  * Whether the caller may email an OWNED scan: its owning user, or an active
@@ -87,17 +67,20 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'not_configured' }, { status: 503 })
   }
 
-  const [perIpAllowed, globalAllowed] = await Promise.all([
-    consumeRateLimit(clientIp(request), RATE_WINDOW_MS, RATE_LIMIT),
-    consumeRateLimit('email-report:global', RATE_WINDOW_MS, GLOBAL_LIMIT),
-  ])
-  if (!perIpAllowed || !globalAllowed) {
+  // Cheap per-IP gate first; the shared GLOBAL bucket is consumed only after a
+  // valid captcha (below), so unsolved requests can't drain it and DoS everyone.
+  const ip = clientIp(request)
+  if (!(await consumeRateLimit(ip, RATE_WINDOW_MS, RATE_LIMIT))) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
   const parsed = BodySchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 })
+  }
+
+  if (!(await verifyTurnstile(parsed.data.turnstileToken ?? '', ip))) {
+    return NextResponse.json({ error: 'captcha_failed' }, { status: 403 })
   }
 
   const store = await getScanStore()
@@ -116,6 +99,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     !(await canEmailOwnedScan(owner))
   ) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  }
+
+  // Bounds total Resend spend; consumed only now that the request is
+  // captcha-cleared and authorized, so abuse can't drain it before a real send.
+  if (!(await consumeRateLimit('email-report:global', RATE_WINDOW_MS, GLOBAL_LIMIT))) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
   // Lead first: the intent is captured even if the provider hiccups.

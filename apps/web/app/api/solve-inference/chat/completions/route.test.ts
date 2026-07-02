@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { sanitizeInferenceBody } from './route.ts'
+import { inputTooLarge, sanitizeInferenceBody } from './route.ts'
 
 const MODEL = 'anthropic/claude-sonnet-4.6'
 const CAP = 4096
@@ -44,5 +44,27 @@ describe('sanitizeInferenceBody', () => {
     expect(out.tools).toEqual([])
     expect(out.tool_choice).toBe('auto')
     expect(out.max_tokens).toBe(CAP)
+  })
+})
+
+describe('inputTooLarge', () => {
+  test('allows a normal conversation', () => {
+    expect(inputTooLarge({ messages: [{ role: 'user', content: 'hi' }] })).toBe(false)
+  })
+
+  test('rejects an oversized messages payload', () => {
+    expect(inputTooLarge({ messages: [{ role: 'user', content: 'x'.repeat(100_001) }] })).toBe(true)
+  })
+
+  test('counts tools toward the cap, not just messages', () => {
+    expect(inputTooLarge({ messages: [], tools: [{ blob: 'x'.repeat(100_001) }] })).toBe(true)
+  })
+
+  test('ignores non-forwarded fields when sizing', () => {
+    expect(inputTooLarge({ messages: [], user: 'x'.repeat(100_001) })).toBe(false)
+  })
+
+  test('treats an empty body as allowed', () => {
+    expect(inputTooLarge({})).toBe(false)
   })
 })

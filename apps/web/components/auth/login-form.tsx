@@ -12,7 +12,9 @@ import { XIcon } from '@/components/ui/x-icon'
 import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 import { notify } from '@/components/ui/toast'
 import { createBrowserSupabaseClient } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import { TURNSTILE_SITE_KEY } from '@/lib/turnstile'
+import { safeNext } from '@/lib/safe-next'
 import type { TOAuthProvider } from '@/lib/oauth-providers'
 
 type TStage = 'email' | 'signup'
@@ -48,16 +50,15 @@ export function LoginForm() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [captchaReset, setCaptchaReset] = useState(0)
 
-  // Carry a same-site ?redirect (e.g. /checkout?plan=pro) through auth as ?next,
-  // which the callback honours after exchanging the session. The startsWith('/')
-  // guard blocks open redirects to external URLs.
+  // Carry a same-site ?redirect through auth as ?next; safeNext drops off-site
+  // values and the callback re-checks.
   const redirectTo =
     typeof window === 'undefined'
       ? undefined
       : (() => {
           const base = `${window.location.origin}/auth/callback`
           const redirect = new URLSearchParams(window.location.search).get('redirect')
-          return redirect !== null && redirect.startsWith('/')
+          return redirect !== null && safeNext(redirect) === redirect
             ? `${base}?next=${encodeURIComponent(redirect)}`
             : base
         })()
@@ -83,12 +84,12 @@ export function LoginForm() {
         options: { redirectTo },
       })
       if (oauthError !== null) {
-        console.error('[login] OAuth sign-in failed', oauthError)
+        logger.error('[login] OAuth sign-in failed', oauthError)
         notify.error(t('error'))
         setBusy(false)
       }
     } catch (cause) {
-      console.error('[login] Supabase client unavailable (check NEXT_PUBLIC_SUPABASE_*)', cause)
+      logger.error('[login] Supabase client unavailable (check NEXT_PUBLIC_SUPABASE_*)', cause)
       notify.error(t('error'))
       setBusy(false)
     }
@@ -140,7 +141,7 @@ export function LoginForm() {
         notify.info(t('newAccount'))
         return
       }
-      console.error('[login] magic-link send failed', error)
+      logger.error('[login] magic-link send failed', error)
       if (/captcha/i.test(error.message)) {
         // The user can simply complete the captcha and retry — not a hard failure.
         notify.warning(t('captchaRequired'))
@@ -148,7 +149,7 @@ export function LoginForm() {
         notify.error(t('error'))
       }
     } catch (cause) {
-      console.error('[login] Supabase client unavailable (check NEXT_PUBLIC_SUPABASE_*)', cause)
+      logger.error('[login] Supabase client unavailable (check NEXT_PUBLIC_SUPABASE_*)', cause)
       setBusy(false)
       recycleCaptcha()
       notify.error(t('error'))

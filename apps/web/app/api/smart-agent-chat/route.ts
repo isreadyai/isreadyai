@@ -13,9 +13,10 @@ import { clientIp } from '@/lib/client-ip'
 import { recordUsage, usageThisMonth, type TOwnerRef } from '@/lib/ai-usage'
 import { apiKeyOwnerId, verifyApiKey } from '@/lib/api-keys'
 import { resolveByoModel } from '@/lib/byo-llm'
-import { resolveWebsiteGrounding } from '@/lib/chat-grounding'
+import { resolveWebsiteGrounding, type IWebsiteGrounding } from '@/lib/chat-grounding'
 import { saveChatThread, type TChatScope } from '@/lib/chat-threads'
 import { resolveEntitlements } from '@/lib/entitlements'
+import { logger } from '@/lib/logger'
 import { isPaidPlan, type TPlan } from '@/lib/plans'
 import { getScanStore } from '@/lib/scan-store'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -151,22 +152,21 @@ export async function POST(request: Request): Promise<Response> {
     return errorResponse('invalid_messages', 'The conversation is invalid or too long.', 400)
   }
 
-  // Resolve the thread scope + grounding scan. A website thread grounds in the
-  // website's latest completed scan (resolved against the owner) but persists to
-  // the website; if that can't be resolved (no session user, or no completed
-  // scan yet) it falls back to grounding on the scan the client is viewing. A
-  // report thread grounds in and persists to that one scan.
-  let scope: TChatScope = { kind: 'report', scanId: parsed.data.scanId }
-  let groundingScanId = parsed.data.scanId
-  if (parsed.data.websiteId !== undefined) {
-    scope = { kind: 'website', websiteId: parsed.data.websiteId }
-    if (access.userId !== null) {
-      const grounding = await resolveWebsiteGrounding(parsed.data.websiteId, access.userId)
-      if (grounding !== null) {
-        groundingScanId = grounding.scanId
-      }
-    }
-  }
+  // Resolve the thread scope + grounding scan. A website thread persists to the
+  // website ONLY when the caller is an authorized member of its workspace:
+  // resolveWebsiteGrounding returns null for a non-member (and before the website
+  // has a completed scan), and resolveChatScope then keeps the thread report-
+  // scoped to the scan the client is viewing — an unauthorized websiteId is never
+  // persisted. A report thread grounds in and persists to that one scan.
+  const grounding =
+    parsed.data.websiteId !== undefined && access.userId !== null
+      ? await resolveWebsiteGrounding(parsed.data.websiteId, access.userId)
+      : null
+  const { scope, groundingScanId } = resolveChatScope(
+    parsed.data.scanId,
+    parsed.data.websiteId,
+    grounding,
+  )
 
   const store = await getScanStore()
   const record = await store.get(groundingScanId)
@@ -264,7 +264,7 @@ export async function POST(request: Request): Promise<Response> {
         })
       } catch (error) {
         // Never break the user's stream over a metering write failure.
-        console.error('[smart-agent-chat] recordUsage failed', error)
+        logger.error('[smart-agent-chat] recordUsage failed', error)
       }
     },
   })
@@ -292,7 +292,7 @@ export async function POST(request: Request): Promise<Response> {
         })
       } catch (error) {
         // Never break the user's stream over a persistence write failure.
-        console.error('[smart-agent-chat] saveChatThread failed', error)
+        logger.error('[smart-agent-chat] saveChatThread failed', error)
       }
     },
   })
@@ -319,6 +319,23 @@ type TChatAccess =
 /** True only when a positive cap exists and the owner has reached it. */
 export function isChatQuotaExceeded(used: number, limit: number): boolean {
   return limit > 0 && used >= limit
+}
+
+/**
+ * The thread scope + grounding scan for a request. A website scope is honored
+ * ONLY when grounding resolved: resolveWebsiteGrounding returns null for a caller
+ * who is not an active member of the website's workspace, so an unauthorized
+ * websiteId is never persisted — the thread stays report-scoped to the viewed scan.
+ */
+export function resolveChatScope(
+  scanId: string,
+  websiteId: string | undefined,
+  grounding: IWebsiteGrounding | null,
+): { scope: TChatScope; groundingScanId: string } {
+  if (websiteId !== undefined && grounding !== null) {
+    return { scope: { kind: 'website', websiteId }, groundingScanId: grounding.scanId }
+  }
+  return { scope: { kind: 'report', scanId }, groundingScanId: scanId }
 }
 
 async function resolveAccess(request: Request): Promise<TChatAccess> {

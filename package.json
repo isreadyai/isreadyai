@@ -33,12 +33,15 @@
     "version:check": "bun run scripts/sync-versions.ts --check",
     "version:sync": "bun run scripts/sync-versions.ts"
   },
+  "dependencies": {
+    "jose": "^6.2.3"
+  },
   "devDependencies": {
     "dotenv-cli": "^11.0.0",
     "exits": "^2.0.1",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.71.0",
-    "turbo": "^2.10.0",
+    "turbo": "^2.10.2",
     "typescript": "~6.0.3"
   },
   "overrides": {

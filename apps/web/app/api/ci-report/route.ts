@@ -4,6 +4,7 @@ import { isScanReport, isSiteReport } from '@isreadyai/scanner'
 import { apiKeyOwnerId, verifyApiKey } from '@/lib/api-keys'
 import { isPaidPlan } from '@/lib/plans'
 import { persistCiReport, CiRepoTakeoverError } from '@/lib/ci-reports'
+import { verifyGithubRepoOidc } from '@/lib/github-oidc'
 
 // MARK: - POST /api/ci-report
 
@@ -15,6 +16,7 @@ import { persistCiReport, CiRepoTakeoverError } from '@/lib/ci-reports'
  * telemetry — the action never also calls /api/telemetry.
  */
 
+export const runtime = 'nodejs'
 export const maxDuration = 30
 
 const MAX_BODY_BYTES = 4_000_000
@@ -62,6 +64,15 @@ export async function POST(request: Request): Promise<NextResponse> {
   const report = parsed.data.report
   if (!isScanReport(report) && !isSiteReport(report)) {
     return NextResponse.json({ error: 'invalid_report' }, { status: 400 })
+  }
+
+  // Without OIDC proof any premium key could register an arbitrary repository_id.
+  const repoIdentity = await verifyGithubRepoOidc(
+    request.headers.get('x-github-oidc') ?? '',
+    parsed.data.repositoryId,
+  )
+  if (repoIdentity === null) {
+    return NextResponse.json({ error: 'repo_ownership_not_verified' }, { status: 403 })
   }
 
   let result: Awaited<ReturnType<typeof persistCiReport>>

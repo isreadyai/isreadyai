@@ -56,12 +56,14 @@ enabled = true
 # an app's redirectTo only when it matches this Site URL or the allowlist below —
 # otherwise it silently falls back to the Site URL.
 site_url = "env(SUPABASE_AUTH_SITE_URL)"
+# Preview deployments and production redirect URLs are set in the Supabase
+# dashboard (Auth → URL Configuration), not pushed from here. Never allowlist the
+# shared `*.vercel.app` wildcard — any tenant's deployment would match it.
 additional_redirect_urls = [
   "https://localhost:3300/auth/callback",
   "http://localhost:3300/auth/callback",
   "https://isready.ai/auth/callback",
   "https://isready.ai/**",
-  "https://*.vercel.app/auth/callback",
 ]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
@@ -74,7 +76,11 @@ enable_anonymous_sign_ins = true
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+# Required: when off, updateUser({email}) implicitly confirms an arbitrary email
+# with no inbox proof, so an anonymous session could claim a victim's email and
+# accept its workspace invites. On, the anon→permanent upgrade must verify the
+# email-change link. The hosted dashboard MUST mirror this (Auth → Email).
+enable_confirmations = true
 
 # Branded, responsive auth emails — the HTML mirrors the app's transactional
 # shell (apps/web/lib/email.ts). content_path resolves against the Supabase

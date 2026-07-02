@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { clientIp } from '@/lib/client-ip'
 import { consumeRateLimit } from '@/lib/rate-limit'
 import { createContactTask, postContactMessage, isClickUpConfigured } from '@/lib/clickup'
 import { verifyTurnstile } from '@/lib/turnstile-verify'
@@ -26,37 +27,15 @@ const BodySchema = z.object({
   turnstileToken: z.string().max(4096).optional(),
 })
 
-/** Trusted client IP: platform `x-real-ip`, else the rightmost `x-forwarded-for` hop. */
-function clientIp(request: Request): string {
-  const realIp = request.headers.get('x-real-ip')?.trim()
-  if (realIp !== undefined && realIp !== '') {
-    return realIp
-  }
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded !== null) {
-    const hops = forwarded
-      .split(',')
-      .map((hop) => hop.trim())
-      .filter((hop) => hop !== '')
-    const trusted = hops[hops.length - 1]
-    if (trusted !== undefined) {
-      return trusted
-    }
-  }
-  return 'local'
-}
-
 export async function POST(request: Request): Promise<NextResponse> {
   if (!isClickUpConfigured()) {
     return NextResponse.json({ error: 'not_configured' }, { status: 503 })
   }
 
+  // Cheap per-IP gate first; the shared GLOBAL bucket is consumed only after a
+  // valid captcha (below), so unsolved requests can't drain it and DoS everyone.
   const ip = clientIp(request)
-  const [perIpAllowed, globalAllowed] = await Promise.all([
-    consumeRateLimit(`contact:${ip}`, RATE_WINDOW_MS, RATE_LIMIT),
-    consumeRateLimit('contact:global', RATE_WINDOW_MS, GLOBAL_LIMIT),
-  ])
-  if (!perIpAllowed || !globalAllowed) {
+  if (!(await consumeRateLimit(`contact:${ip}`, RATE_WINDOW_MS, RATE_LIMIT))) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
@@ -67,6 +46,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   if (!(await verifyTurnstile(parsed.data.turnstileToken ?? '', ip))) {
     return NextResponse.json({ error: 'captcha_failed' }, { status: 403 })
+  }
+
+  if (!(await consumeRateLimit('contact:global', RATE_WINDOW_MS, GLOBAL_LIMIT))) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
   const submission = {

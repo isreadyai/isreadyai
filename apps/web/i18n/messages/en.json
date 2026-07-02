@@ -519,7 +519,10 @@
     "submitting": "Creating account…",
     "continue": "Continue to payment",
     "haveAccount": "Already have an account?",
-    "login": "Log in"
+    "login": "Log in",
+    "checkEmailTitle": "Confirm your email",
+    "checkEmailBody": "We sent a confirmation link to {email}. Click it to verify your address and continue to payment.",
+    "checkEmailHint": "Didn't get it? Check your spam folder."
   },
   "hero": {
     "kicker": "Open-source · {count} real checks · free",

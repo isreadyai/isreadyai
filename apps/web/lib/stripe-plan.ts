@@ -40,9 +40,9 @@ export function planFromPrice(priceId: string | null): TPlan | null {
 }
 
 /**
- * active/trialing grant the subscribed price's plan; canceled or
- * incomplete_expired drop to free; past_due/unpaid keep the current plan so a
- * transient payment failure never downgrades a paying customer.
+ * active/trialing grant the subscribed price's plan; past_due keeps the current
+ * plan as a bounded grace while Stripe retries collection; every other status
+ * (unpaid, paused, incomplete, canceled, incomplete_expired) revokes to free.
  */
 export function planFromStatus(
   status: Stripe.Subscription.Status,
@@ -52,8 +52,10 @@ export function planFromStatus(
   if (status === 'active' || status === 'trialing') {
     return pricePlan ?? currentPlan
   }
-  if (status === 'canceled' || status === 'incomplete_expired') {
-    return EPlan.FREE
+  // past_due keeps the plan as a bounded grace: Stripe's dunning retries the
+  // charge, so we don't downgrade a likely-recoverable customer mid-retry.
+  if (status === 'past_due') {
+    return currentPlan
   }
-  return currentPlan
+  return EPlan.FREE
 }

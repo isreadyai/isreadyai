@@ -45,9 +45,15 @@ describe('planFromStatus', () => {
     expect(planFromStatus('incomplete_expired', EPlan.TEAM, EPlan.TEAM)).toBe(EPlan.FREE)
   })
 
-  test('past_due and unpaid never downgrade a paying customer', () => {
+  test('past_due keeps the current plan as a bounded retry grace', () => {
     expect(planFromStatus('past_due', EPlan.PRO, EPlan.PRO)).toBe(EPlan.PRO)
-    expect(planFromStatus('unpaid', EPlan.TEAM, EPlan.TEAM)).toBe(EPlan.TEAM)
+    expect(planFromStatus('past_due', EPlan.TEAM, EPlan.TEAM)).toBe(EPlan.TEAM)
+  })
+
+  test('unpaid, paused and incomplete revoke entitlements to free', () => {
+    expect(planFromStatus('unpaid', EPlan.TEAM, EPlan.TEAM)).toBe(EPlan.FREE)
+    expect(planFromStatus('paused', EPlan.PRO, EPlan.PRO)).toBe(EPlan.FREE)
+    expect(planFromStatus('incomplete', EPlan.PRO, EPlan.PRO)).toBe(EPlan.FREE)
   })
 })
 

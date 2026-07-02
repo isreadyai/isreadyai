@@ -131,7 +131,15 @@ export function isWriteDenied(rel: string): boolean {
  * ancestor and re-assert containment against the realpath'd root.
  */
 export function safePathIn(workspaceRoot: string, input: string): string {
-  if (input.length === 0 || input.startsWith('/') || input.includes('..') || input.includes('\0')) {
+  // A leading ':' is git pathspec magic (`:(glob)`, `:/`), so a file written under
+  // such a name could widen `git add --pathspec-from-file` beyond the declared set.
+  if (
+    input.length === 0 ||
+    input.startsWith('/') ||
+    input.startsWith(':') ||
+    input.includes('..') ||
+    input.includes('\0')
+  ) {
     deny(`refusing unsafe path: ${input}`)
   }
   const full = resolve(workspaceRoot, input)
@@ -184,17 +192,21 @@ export function isSecretPath(rel: string): boolean {
  * token prefixes. Defense-in-depth for secrets embedded in otherwise-readable files.
  */
 export function redactSecrets(content: string): string {
-  return content
-    .replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g, '[REDACTED KEY BLOCK]')
-    .replace(
-      /\b([A-Za-z0-9_]*(?:SECRET|TOKEN|PASSWORD|PASSWD|API[_-]?KEY|ACCESS[_-]?KEY|PRIVATE[_-]?KEY|CLIENT[_-]?SECRET)[A-Za-z0-9_]*)(\s*[:=]\s*)(['"]?)[^\s'"]{6,}\3/gi,
-      (_match: string, key: string, sep: string, quote: string) =>
-        `${key}${sep}${quote}[REDACTED]${quote}`,
-    )
-    .replace(
-      /\b(sk-[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{12,})\b/g,
-      '[REDACTED]',
-    )
+  return (
+    content
+      .replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g, '[REDACTED KEY BLOCK]')
+      .replace(
+        /\b([A-Za-z0-9_]*(?:SECRET|TOKEN|PASSWORD|PASSWD|PASSPHRASE|API[_-]?KEY|ACCESS[_-]?KEY|PRIVATE[_-]?KEY|CLIENT[_-]?SECRET|CRED|CREDENTIAL|SIGNING[_-]?KEY|OAUTH|AUTH[_-]?TOKEN|DSN|CONNECTION[_-]?STRING)[A-Za-z0-9_]*)(\s*[:=]\s*)(['"]?)[^\s'"]{6,}\3/gi,
+        (_match: string, key: string, sep: string, quote: string) =>
+          `${key}${sep}${quote}[REDACTED]${quote}`,
+      )
+      // Credentials embedded in a connection-string URL (postgres://user:pass@host).
+      .replace(/\b([a-z][a-z0-9+.-]*:\/\/[^:@\s/]+):[^@\s/]+@/gi, '$1:[REDACTED]@')
+      .replace(
+        /\b(sk-[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{12,})\b/g,
+        '[REDACTED]',
+      )
+  )
 }
 
 /** A NUL byte in the first KBs means the file isn't UTF-8 text — don't ship binary into the model. */

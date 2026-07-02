@@ -1,19 +1,41 @@
 // MARK: - Client IP extraction
 
 /**
- * The client IP used for rate-limit keys, from the platform's forwarding headers.
- * Uses the FIRST x-forwarded-for hop: on Vercel the platform sets/normalizes
- * x-forwarded-for so the leftmost entry is the real client. Falls back to
- * x-real-ip, then 'local' so a missing header buckets callers together rather
- * than bypassing the limit.
- *
- * @remarks Trusts the deployment proxy (Vercel) to populate x-forwarded-for.
- * Behind a different reverse proxy, revisit which hop is the real client.
+ * Whether forwarding headers are trustworthy. Defaults to true (Vercel sets
+ * `x-real-ip`/`x-forwarded-for` itself); self-hosted deploys with no trusted proxy
+ * set `TRUST_PROXY_HEADERS=false` so a caller can't spoof those headers to dodge
+ * per-IP rate limits.
+ */
+function trustsProxyHeaders(): boolean {
+  const flag = process.env.TRUST_PROXY_HEADERS
+  return flag !== 'false' && flag !== '0'
+}
+
+/**
+ * The client IP for rate-limit keys, from a trusted source. Prefers Vercel's
+ * unspoofable `x-real-ip`; falls back to the RIGHTMOST `x-forwarded-for` hop (the
+ * one our proxy appends — leftmost entries are attacker-spoofable), else 'local'.
  */
 export function clientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-  if (forwarded !== undefined && forwarded.length > 0) {
-    return forwarded
+  // Untrusted proxy chain: collapse everyone to the shared bucket, since the only
+  // headers that would distinguish callers are themselves spoofable here.
+  if (!trustsProxyHeaders()) {
+    return 'local'
   }
-  return request.headers.get('x-real-ip') ?? 'local'
+  const realIp = request.headers.get('x-real-ip')?.trim()
+  if (realIp !== undefined && realIp !== '') {
+    return realIp
+  }
+  const forwarded = request.headers.get('x-forwarded-for')
+  if (forwarded !== null) {
+    const hops = forwarded
+      .split(',')
+      .map((hop) => hop.trim())
+      .filter((hop) => hop !== '')
+    const trusted = hops[hops.length - 1]
+    if (trusted !== undefined) {
+      return trusted
+    }
+  }
+  return 'local'
 }

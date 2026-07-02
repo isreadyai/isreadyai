@@ -121,15 +121,21 @@ runs:
         set -euo pipefail
         git config user.name "isready-bot"
         git config user.email "bot@isready.ai"
-        git checkout -B "$BRANCH"
+        # Disable repo-supplied git hooks on every git command below (core.hooksPath=/dev/null
+        # + --no-verify on commit/push): GH_TOKEN is in this step's env and the source the agent
+        # read is untrusted, so no post-checkout/pre-commit/commit-msg/pre-push hook may run with
+        # the token available. GH_TOKEN stays — it's needed only by the push and the gh pr calls.
+        git -c core.hooksPath=/dev/null checkout -B "$BRANCH"
         # Stage ONLY the files the agent reported changing (NUL-delimited list it wrote), never `git add -A`. The repo source the agent read is untrusted, so a stray write outside this set must never be staged, committed or pushed — the push runs git hooks with GH_TOKEN in env.
         if [ ! -s "$FIX_DIR/changed.list" ]; then
           echo "::error::no changed-file manifest from the fix agent"
           exit 1
         fi
-        git add --pathspec-from-file="$FIX_DIR/changed.list" --pathspec-file-nul
-        git commit -m "fix: improve AI readiness (isready.ai)"
-        git push -u origin "$BRANCH" --force-with-lease
+        # --literal-pathspecs: treat every list entry as a literal path, so a file
+        # named like git pathspec magic (e.g. ':(glob)**') can't widen the add set.
+        git --literal-pathspecs add --pathspec-from-file="$FIX_DIR/changed.list" --pathspec-file-nul
+        git -c core.hooksPath=/dev/null commit --no-verify -m "fix: improve AI readiness (isready.ai)"
+        git -c core.hooksPath=/dev/null push --no-verify -u origin "$BRANCH" --force-with-lease
         PR_URL=$(gh pr create \
           --title "Improve AI readiness — isready.ai fixes" \
           --body-file "$FIX_DIR/pr-body.md" \
