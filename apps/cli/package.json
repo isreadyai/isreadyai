@@ -1,6 +1,6 @@
 {
   "name": "isreadyai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Check if your website is ready for AI — LLM crawlability & AI-SEO audit from your terminal",
   "homepage": "https://isready.ai",
   "license": "MIT",

@@ -1,6 +1,6 @@
 {
   "name": "isreadyai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Is Ready for AI — audit whether a website or SaaS is readable, crawlable and optimized for LLMs and AI search engines.",
   "license": "SEE LICENSE IN LICENSE",
@@ -40,7 +40,7 @@
     "dotenv-cli": "^11.0.0",
     "exits": "^2.0.1",
     "oxfmt": "^0.54.0",
-    "oxlint": "^1.71.0",
+    "oxlint": "^1.72.0",
     "turbo": "^2.10.2",
     "typescript": "~6.0.3"
   },
