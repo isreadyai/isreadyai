@@ -3,7 +3,8 @@ import { z } from 'zod'
 import { isScanReport, isSiteReport } from '@isreadyai/scanner'
 import { apiKeyOwnerId, verifyApiKey } from '@/lib/api-keys'
 import { isPaidPlan } from '@/lib/plans'
-import { persistCiReport, CiRepoTakeoverError } from '@/lib/ci-reports'
+import { ciBadgeLinks, persistCiReport, CiRepoTakeoverError } from '@/lib/ci-reports'
+import { verifyGithubRepoOidc } from '@/lib/github-oidc'
 
 // MARK: - POST /api/ci-report
 
@@ -15,6 +16,7 @@ import { persistCiReport, CiRepoTakeoverError } from '@/lib/ci-reports'
  * telemetry — the action never also calls /api/telemetry.
  */
 
+export const runtime = 'nodejs'
 export const maxDuration = 30
 
 const MAX_BODY_BYTES = 4_000_000
@@ -64,6 +66,15 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid_report' }, { status: 400 })
   }
 
+  // Without OIDC proof any premium key could register an arbitrary repository_id.
+  const repoIdentity = await verifyGithubRepoOidc(
+    request.headers.get('x-github-oidc') ?? '',
+    parsed.data.repositoryId,
+  )
+  if (repoIdentity === null) {
+    return NextResponse.json({ error: 'repo_ownership_not_verified' }, { status: 403 })
+  }
+
   let result: Awaited<ReturnType<typeof persistCiReport>>
   try {
     result = await persistCiReport({
@@ -86,10 +97,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'persist_failed' }, { status: 500 })
   }
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://isready.ai'
-  const badgeUrl = `${origin}/badge/gh/${result.slug}/${encodeURIComponent(result.branch)}`
-  const reportUrl = `${origin}/report/gh/${result.slug}/${encodeURIComponent(result.commit)}`
-  const badgeMarkdown = `[![AI readiness](${badgeUrl})](${reportUrl})`
+  const { badgeUrl, reportUrl, badgeMarkdown } = ciBadgeLinks(
+    result.slug,
+    result.branch,
+    result.commit,
+  )
 
   return NextResponse.json({
     slug: result.slug,

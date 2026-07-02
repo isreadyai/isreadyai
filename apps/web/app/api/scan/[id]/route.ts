@@ -3,6 +3,8 @@ import { hostOf, isSiteReport } from '@isreadyai/scanner'
 import { getScanStore } from '@/lib/scan-store'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getMemberRole, isWorkspaceManager } from '@/lib/workspace'
+import { verifyScanWriteToken } from '@/lib/scan-write-token'
+import { drainCapped, PayloadTooLargeError } from '@/lib/stream-cap'
 
 const ID_RE = /^[0-9a-f-]{36}$/i
 // Compressed body cap — applied to the content-length (gzip or raw).
@@ -15,8 +17,9 @@ type TScanOwner = { userId: string | null; workspaceId: string | null }
 /**
  * Gates access to an owned scan. Anonymous scans (both owner fields null) are
  * public-by-id and never reach here. For an owned scan we require a session that
- * either is the owning user or is an active member of the owning workspace.
- * Returns an error response to send, or null when access is granted.
+ * either is the owning user or is a manager (owner/admin) of the owning workspace
+ * — mutating a teammate's report is a manager action, mirroring DELETE. Returns
+ * an error response to send, or null when access is granted.
  */
 async function denyUnlessOwner(owner: TScanOwner): Promise<NextResponse | null> {
   const supabase = await createServerSupabaseClient()
@@ -31,7 +34,7 @@ async function denyUnlessOwner(owner: TScanOwner): Promise<NextResponse | null> 
   }
   if (
     owner.workspaceId !== null &&
-    (await getMemberRole(supabase, user.id, owner.workspaceId)) !== null
+    isWorkspaceManager(await getMemberRole(supabase, user.id, owner.workspaceId))
   ) {
     return null
   }
@@ -88,46 +91,34 @@ export async function PATCH(
   if (contentLength > MAX_BODY_BYTES) {
     return NextResponse.json({ error: 'payload_too_large' }, { status: 413 })
   }
+  if (request.body === null) {
+    return NextResponse.json({ error: 'invalid_body' }, { status: 400 })
+  }
 
   const isGzip = request.headers.get('x-content-encoding') === 'gzip'
 
   let body: unknown
   try {
+    let merged: Uint8Array
     if (isGzip) {
-      // Client compressed the JSON with CompressionStream('gzip') to fit under the
-      // body cap; decompress before parsing.
-      const rawBytes = new Uint8Array(await request.arrayBuffer())
-      // Blob.stream().pipeThrough() drives the writable side concurrently as we
-      // drain the readable — no backpressure deadlock (same fix as client-side).
-      // The running-total cap still aborts a zip-bomb mid-stream.
-      const reader = new Blob([rawBytes])
-        .stream()
-        .pipeThrough(new DecompressionStream('gzip'))
-        .getReader()
-      const chunks: Uint8Array[] = []
-      let totalBytes = 0
-      while (true) {
-        const result = await reader.read()
-        if (result.done) break
-        totalBytes += result.value.byteLength
-        if (totalBytes > MAX_DECOMPRESSED_BYTES) {
-          void reader.cancel().catch(() => undefined)
-          return NextResponse.json({ error: 'payload_too_large' }, { status: 413 })
-        }
-        chunks.push(result.value)
-      }
-      const merged = new Uint8Array(totalBytes)
-      let offset = 0
-      for (const chunk of chunks) {
-        merged.set(chunk, offset)
-        offset += chunk.byteLength
-      }
-      const decompressedText = new TextDecoder().decode(merged)
-      body = JSON.parse(decompressedText)
+      // Cap the raw compressed bytes first (Content-Length is spoofable/absent on a
+      // chunked body), then the decompressed bytes — the latter aborts a zip-bomb
+      // mid-stream. pipeThrough drives the writable side as we drain the readable,
+      // so there's no backpressure deadlock.
+      const rawBytes = await drainCapped(request.body, MAX_BODY_BYTES)
+      merged = await drainCapped(
+        new Blob([rawBytes]).stream().pipeThrough(new DecompressionStream('gzip')),
+        MAX_DECOMPRESSED_BYTES,
+      )
     } else {
-      body = await request.json()
+      // Cap the actually-streamed bytes, not the spoofable Content-Length header.
+      merged = await drainCapped(request.body, MAX_BODY_BYTES)
     }
-  } catch {
+    body = JSON.parse(new TextDecoder().decode(merged))
+  } catch (error) {
+    if (error instanceof PayloadTooLargeError) {
+      return NextResponse.json({ error: 'payload_too_large' }, { status: 413 })
+    }
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 })
   }
   const siteReport = (body as { siteReport?: unknown } | null)?.siteReport
@@ -145,6 +136,9 @@ export async function PATCH(
     if (denied !== null) {
       return denied
     }
+  } else if (!verifyScanWriteToken(request.headers.get('x-scan-write-token') ?? '', id)) {
+    // Anonymous scans have no owner to gate on; only the creator holds this token.
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
   const record = await store.get(id)
@@ -164,8 +158,8 @@ export async function PATCH(
 /**
  * Authenticated, ownership-checked deletion. Deleting is destructive, so it's
  * allowed for the scan's own user OR a manager (owner/admin) of the owning
- * workspace — a plain member can view and PATCH a teammate's scan but not delete
- * it. Returns a clean 404 (never leaks existence) when unauthorized.
+ * workspace — a plain member can view a teammate's scan but cannot mutate (PATCH)
+ * or delete it. Returns a clean 404 (never leaks existence) when unauthorized.
  */
 export async function DELETE(
   _request: Request,

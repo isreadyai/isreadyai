@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { safeNext } from '@/lib/safe-next'
 import { WelcomeConsent } from '@/components/welcome/welcome-consent'
 
 export const dynamic = 'force-dynamic'
@@ -11,16 +12,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('welcome')
   // Authenticated consent gate — never index it, and don't follow into the app.
   return { title: t('title'), robots: { index: false, follow: false } }
-}
-
-// Only same-site, absolute-path destinations survive; anything else (external
-// URLs, protocol-relative //evil.com) falls back to the dashboard. Mirrors the
-// open-redirect guard the login flow uses on its ?redirect param.
-function safeNext(raw: string | undefined): string {
-  if (raw !== undefined && raw.startsWith('/') && !raw.startsWith('//')) {
-    return raw
-  }
-  return '/dashboard'
 }
 
 const BULLETS = [

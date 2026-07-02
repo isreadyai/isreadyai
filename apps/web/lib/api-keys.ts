@@ -1,5 +1,6 @@
 import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
 import type { IApiKey, IFixQuota } from '@/lib/api-key-types'
+import { envInt } from '@/lib/env'
 import { EPlan, PLAN_FIX_QUOTA, planOrFree, type TPlan } from '@/lib/plans'
 import { ownerPlanForWorkspace } from '@/lib/workspace'
 
@@ -32,6 +33,32 @@ function devKey(): string | undefined {
 
 // MARK: - Verification
 
+const LAST_USED_THROTTLE_MS = envInt('API_KEY_LAST_USED_THROTTLE_MS', 5 * 60 * 1000)
+
+/** True when a key has a finite lifetime that has already elapsed. */
+function isExpired(expiresAt: string | null): boolean {
+  return expiresAt !== null && Date.parse(expiresAt) <= Date.now()
+}
+
+/**
+ * Stamps last_used_at, throttled so a busy key doesn't write on every call.
+ * Best-effort: an audit-stamp write failure must never block a valid key.
+ */
+async function stampLastUsed(
+  client: TServiceClient,
+  id: string,
+  lastUsedAt: string | null,
+): Promise<void> {
+  if (lastUsedAt !== null && Date.now() - Date.parse(lastUsedAt) <= LAST_USED_THROTTLE_MS) {
+    return
+  }
+  try {
+    await client.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', id)
+  } catch {
+    // Non-critical audit stamp; never fail authentication over it.
+  }
+}
+
 export async function verifyApiKey(raw: string): Promise<IApiKey | null> {
   if (!isSupabaseConfigured()) {
     return devKey() !== undefined && raw === devKey()
@@ -41,17 +68,27 @@ export async function verifyApiKey(raw: string): Promise<IApiKey | null> {
   const client = await createServiceClient()
   const { data, error } = await client
     .from('api_keys')
-    .select('id, user_id, workspace_id, revoked_at')
+    .select('id, user_id, workspace_id, revoked_at, expires_at, last_used_at')
     .eq('key_hash', await hashKey(raw))
     .maybeSingle()
-  if (error !== null || data === null || data.revoked_at !== null || data.user_id === null) {
+  if (
+    error !== null ||
+    data === null ||
+    data.revoked_at !== null ||
+    data.user_id === null ||
+    isExpired(data.expires_at)
+  ) {
     return null
   }
   const plan = await resolveKeyPlan(client, {
     user_id: data.user_id,
     workspace_id: data.workspace_id,
   })
-  return plan === null ? null : { id: data.id, plan, workspace_id: data.workspace_id }
+  if (plan === null) {
+    return null
+  }
+  await stampLastUsed(client, data.id, data.last_used_at)
+  return { id: data.id, plan, workspace_id: data.workspace_id }
 }
 
 export async function findApiKeyById(id: IApiKey['id']): Promise<IApiKey | null> {
@@ -63,10 +100,16 @@ export async function findApiKeyById(id: IApiKey['id']): Promise<IApiKey | null>
   const client = await createServiceClient()
   const { data, error } = await client
     .from('api_keys')
-    .select('id, user_id, workspace_id, revoked_at')
+    .select('id, user_id, workspace_id, revoked_at, expires_at')
     .eq('id', id)
     .maybeSingle()
-  if (error !== null || data === null || data.revoked_at !== null || data.user_id === null) {
+  if (
+    error !== null ||
+    data === null ||
+    data.revoked_at !== null ||
+    data.user_id === null ||
+    isExpired(data.expires_at)
+  ) {
     return null
   }
   const plan = await resolveKeyPlan(client, {

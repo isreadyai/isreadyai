@@ -244,21 +244,21 @@ by the scheduled re-scan — and the public URL never exposes your API key.
 
 ### GitHub Action
 
-Gate your deploys on AI readiness — the action **deep-crawls** the site, writes the full report to the job summary, and fails the step when the score drops below your threshold:
+Gate your deploys on AI readiness — the action **deep-crawls** the site, writes the full report to the job summary, and fails the step when the score drops below your threshold. `DEPLOY_URL` isn't set by GitHub Actions — define it yourself (e.g. `env: DEPLOY_URL: https://yoursite.com` at the job level), or pass a literal URL instead:
 
 ```yaml
-- name: AI readiness audit
-  uses: isreadyai/isreadyai@v1
+- name: Readiness audit
+  uses: isreadyai/audit-action@v1
   with:
-    url: ${{ env.DEPLOY_URL }}
+    url: ${{ env.DEPLOY_URL }} # define DEPLOY_URL yourself, e.g. env: DEPLOY_URL: https://yoursite.com
     threshold: 80
 ```
 
 To audit a branch before it ships, set `command` to boot the branch environment; the action starts it in the background, waits for `url` to respond, then scans that local URL:
 
 ```yaml
-- name: AI readiness audit (branch preview)
-  uses: isreadyai/isreadyai@v1
+- name: Readiness audit (branch preview)
+  uses: isreadyai/audit-action@v1
   with:
     command: npm run preview # boots the env in the background
     url: http://localhost:3000 # the local URL it listens on
@@ -266,16 +266,50 @@ To audit a branch before it ships, set `command` to boot the branch environment;
     api-key: ${{ secrets.ISREADYAI_API_KEY }} # Pro/Team: uploads the report + repo badge
 ```
 
-| Input       | Required | Default              | Purpose                                                                                                                                               |
-| ----------- | -------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `url`       | yes      | —                    | URL to audit (strict `http(s)://` allowlist). With `command` set, the local URL the env serves.                                                       |
-| `threshold` | no       | `70`                 | Minimum acceptable score; the step fails below it.                                                                                                    |
-| `command`   | no       | `''`                 | Command run with `bash -c` to boot the branch env before scanning. **Only use literal, trusted values** — never wire it from PR/fork-controlled data. |
-| `api-key`   | no       | `''`                 | isready.ai API key (repo secret). When set, uploads an authenticated CI report and prints a branch-stable repo badge. Pro/Team only.                  |
-| `api-url`   | no       | `https://isready.ai` | API origin; override for self-hosted deployments.                                                                                                     |
-| `report`    | no       | `true`               | Set `false` to keep a keyed run local-only (no upload, no badge).                                                                                     |
+> **Keyed runs require OIDC.** The authenticated upload proves the workflow runs inside the repository it registers — so no one else can claim your repo's badge. Grant the job `id-token: write`; a keyed run without it now **fails fast** with an actionable error (rather than silently dropping the report), or set `report: false` to keep the run local-only:
+>
+> ```yaml
+> jobs:
+>   audit:
+>     permissions:
+>       id-token: write # isready.ai verifies repo ownership via the OIDC token
+>       contents: read
+>     steps:
+>       - uses: isreadyai/audit-action@v1
+>         with:
+>           url: ${{ env.DEPLOY_URL }} # define DEPLOY_URL yourself, e.g. env: DEPLOY_URL: https://yoursite.com
+>           api-key: ${{ secrets.ISREADYAI_API_KEY }}
+> ```
+
+| Input       | Required | Default              | Purpose                                                                                                                                                                                                |
+| ----------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `url`       | yes      | —                    | URL to audit (strict `http(s)://` allowlist). With `command` set, the local URL the env serves.                                                                                                        |
+| `threshold` | no       | `70`                 | Minimum acceptable score; the step fails below it.                                                                                                                                                     |
+| `command`   | no       | `''`                 | Command run with `bash -c` to boot the branch env before scanning. **Only use literal, trusted values** — never wire it from PR/fork-controlled data.                                                  |
+| `api-key`   | no       | `''`                 | isready.ai API key (repo secret). When set, uploads an authenticated CI report and prints a branch-stable repo badge. Pro/Team only; the job must grant `id-token: write` (OIDC repo-ownership proof) — a keyed run without it fails fast. |
+| `api-url`   | no       | `https://isready.ai` | API origin; override for self-hosted deployments.                                                                                                                                                      |
+| `report`    | no       | `true`               | Set `false` to keep a keyed run local-only (no upload, no badge).                                                                                                                                      |
 
 Outputs `score` and `grade` for downstream steps, plus `badge` (a branch-stable repo-badge Markdown snippet) and `report-url` (the shareable report) when a report is uploaded. The action sends an anonymous, PII-free usage ping (host + score only); opt out with `TELEMETRY=false`. The standard scan is free for everyone, including open-source projects; the authenticated CI report + repo badge require a Pro or Team plan.
+
+The companion **fix action** goes further: after scanning it runs an in-runner AI agent that applies the fixes and opens a pull request — and uploads the same CI report + repo badge, so the dashboard fills in even if you only use fix. It needs `contents: write` and `pull-requests: write` to open the PR, plus `id-token: write` for the report upload:
+
+```yaml
+jobs:
+  fix:
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write # uploads the CI report + repo badge
+    steps:
+      - uses: actions/checkout@v7
+      - uses: isreadyai/fix-action@v1
+        with:
+          url: ${{ env.DEPLOY_URL }} # define DEPLOY_URL yourself, e.g. env: DEPLOY_URL: https://yoursite.com
+          api-key: ${{ secrets.ISREADYAI_API_KEY }} # Pro/Team
+```
+
+Before minting its metered token, the fix action **preflights** that the run can actually open a pull request — the token's push access and the repo's _Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and approve pull requests"_ setting — so a misconfigured job fails fast with a fix, instead of after the AI work.
 
 Use the engine as a library:
 
