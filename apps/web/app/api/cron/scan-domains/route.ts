@@ -2,11 +2,14 @@ import { allChecks, isScanReport, scan, scanSite } from '@isreadyai/scanner'
 import type { IScanReport } from '@isreadyai/scanner'
 import type { Json } from '@isreadyai/supabase'
 import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { sendScoreDropEmail } from '@/lib/email-monitoring'
+import { resolveEntitlements, type IEntitlements } from '@/lib/entitlements'
 import { materializeScanSummary } from '@/lib/scan-store'
 import { runWebSmartAgentAudit } from '@/lib/smart-agent/run-smart-agent'
 import { runWebSmartDeepAudit } from '@/lib/smart-agent/run-smart-deep'
 import { normalizeHost } from '@/lib/url'
+import { ownerPlanForWorkspace } from '@/lib/workspace'
 
 // MARK: - GET /api/cron/scan-domains — scheduled re-scans (the badge engine)
 
@@ -39,8 +42,7 @@ const INTERVAL_MS: Record<string, number> = {
 }
 
 export async function GET(request: Request): Promise<Response> {
-  const secret = process.env.CRON_SECRET
-  if (secret === undefined || request.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!isAuthorizedCron(request)) {
     return Response.json({ error: 'unauthorized' }, { status: 401 })
   }
   if (!isSupabaseConfigured()) {
@@ -50,6 +52,20 @@ export async function GET(request: Request): Promise<Response> {
   const client = await createServiceClient()
   const startedMs = Date.now()
   const nowIso = new Date(startedMs).toISOString()
+
+  // Re-resolve each owner's CURRENT plan (cached per workspace): a downgrade must
+  // stop the paid deep crawl + Smart Agent passes even while stale schedules,
+  // created while the workspace still paid, keep requesting them.
+  const entCache = new Map<string, IEntitlements>()
+  const entitlementsFor = async (workspaceId: string): Promise<IEntitlements> => {
+    const cached = entCache.get(workspaceId)
+    if (cached !== undefined) {
+      return cached
+    }
+    const ent = resolveEntitlements(await ownerPlanForWorkspace(client, workspaceId))
+    entCache.set(workspaceId, ent)
+    return ent
+  }
 
   const { data: due } = await client
     .from('monitoring_schedules')
@@ -73,9 +89,17 @@ export async function GET(request: Request): Promise<Response> {
     if (website === null) {
       continue
     }
+    // Gate the heavy passes on the workspace's plan NOW, not on the schedule's
+    // stored flags: deep crawl needs monitoring, Smart Agent needs smartAgent.
+    const ent = await entitlementsFor(website.workspace_id)
     const host = normalizeHost(website.host)
     const group = groups.get(host) ?? { url: `https://${host}`, entries: [] }
-    group.entries.push({ schedule, website })
+    group.entries.push({
+      schedule,
+      website,
+      deep: schedule.scan_mode === 'deep' && ent.monitoringEnabled,
+      smart: schedule.smart_agent_enabled !== false && ent.smartAgent,
+    })
     groups.set(host, group)
   }
 
@@ -84,10 +108,10 @@ export async function GET(request: Request): Promise<Response> {
     if (Date.now() - startedMs > TIME_BUDGET_MS) {
       break
     }
-    // Union of the group's settings: crawl deep if ANY schedule wants deep, run
-    // Smart if ANY wants it — the heavy passes run once, stored per-schedule below.
-    const deep = group.entries.some((e) => e.schedule.scan_mode === 'deep')
-    const smart = group.entries.some((e) => e.schedule.smart_agent_enabled !== false)
+    // Union of the group's PLAN-GATED settings: a host tracked by several
+    // workspaces runs each heavy pass once if any still-paying schedule wants it.
+    const deep = group.entries.some((e) => e.deep)
+    const smart = group.entries.some((e) => e.smart)
     try {
       const report = await scan(group.url, { checks: allChecks })
       if (report.meta.fetchOk) {
@@ -129,6 +153,9 @@ interface IScheduleEntry {
     smart_agent_enabled: boolean | null
   }
   website: { host: string; workspace_id: string; created_by: string | null }
+  // Plan-gated effective passes for this schedule's workspace, re-resolved per tick.
+  deep: boolean
+  smart: boolean
 }
 
 type THeavy = Awaited<ReturnType<typeof computeHeavy>>
@@ -177,7 +204,7 @@ async function computeHeavy(
 
 /**
  * Persists one scheduled scan row from the shared host report + heavy passes,
- * honouring THIS schedule's own deep/smart settings, then advances the badge
+ * honouring THIS schedule's plan-gated deep/smart flags, then advances the badge
  * pointer, fires alerts, and materializes the summary. Best-effort per row.
  */
 async function persistScheduledScan(
@@ -187,9 +214,9 @@ async function persistScheduledScan(
   report: IScanReport,
   heavy: THeavy,
 ): Promise<void> {
-  const { schedule, website } = entry
-  const deep = schedule.scan_mode === 'deep'
-  const smart = schedule.smart_agent_enabled !== false
+  // deep/smart are the plan-gated flags resolved in GET, so a downgraded
+  // workspace's row records the passes as disabled rather than failed.
+  const { schedule, website, deep, smart } = entry
 
   // Previous monitored score BEFORE inserting, so maybeAlert can detect a drop.
   const { data: prevScan } = await client

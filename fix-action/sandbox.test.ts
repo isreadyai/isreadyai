@@ -76,6 +76,11 @@ describe('safePathIn', () => {
     expect(() => safePathIn(root, 'escape/payload.txt')).toThrow()
   })
 
+  test('rejects a git pathspec-magic path', () => {
+    expect(() => safePathIn(root, ':(glob)**')).toThrow()
+    expect(() => safePathIn(root, ':/etc/passwd')).toThrow()
+  })
+
   test('allows a normal workspace-relative path', () => {
     expect(safePathIn(root, 'public/robots.txt')).toBe(join(root, 'public/robots.txt'))
   })
@@ -183,6 +188,12 @@ describe('redactSecrets', () => {
     expect(redactSecrets('API_KEY=sk-abcdef123456')).toContain('[REDACTED]')
     expect(redactSecrets('export OPENAI_API_KEY="verysecretvalue123"')).toContain('[REDACTED]')
     expect(redactSecrets('authToken: ghp_0123456789abcdefghijklmnop')).toContain('[REDACTED]')
+  })
+
+  test('masks connection-string passwords and extra credential keywords', () => {
+    expect(redactSecrets('postgres://user:s3cretpw@db.host:5432/app')).not.toContain('s3cretpw')
+    expect(redactSecrets('DB_CRED = "supersecretvalue"')).toContain('[REDACTED]')
+    expect(redactSecrets('SIGNING_KEY: abcdef123456')).toContain('[REDACTED]')
   })
 
   test('leaves ordinary content intact', () => {

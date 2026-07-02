@@ -1,4 +1,5 @@
 import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 
 // MARK: - GET /api/cron/cleanup-anonymous — reap stale anonymous users
 
@@ -13,8 +14,7 @@ import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
 const RETENTION_DAYS = 30
 
 export async function GET(request: Request): Promise<Response> {
-  const secret = process.env.CRON_SECRET
-  if (secret === undefined || request.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!isAuthorizedCron(request)) {
     return Response.json({ error: 'unauthorized' }, { status: 401 })
   }
   if (!isSupabaseConfigured()) {

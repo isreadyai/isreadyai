@@ -40,6 +40,7 @@ function makeBuilder(config: TTableConfig): Record<string, unknown> {
     'order',
     'limit',
     'match',
+    'update',
   ]) {
     builder[m] = chain
   }
@@ -227,6 +228,45 @@ describe('verifyApiKey (Supabase backend)', () => {
       profiles: { result: { data: { plan: 'enterprise' } } },
     })
     expect(await verifyApiKey('raw')).toEqual({ id: 'k1', plan: EPlan.FREE, workspace_id: 'w1' })
+  })
+
+  test('returns null for an expired key', async () => {
+    serviceClient = fakeClient({
+      api_keys: {
+        result: {
+          data: {
+            id: 'k1',
+            user_id: 'u1',
+            workspace_id: 'w1',
+            revoked_at: null,
+            expires_at: '2000-01-01T00:00:00Z',
+          },
+        },
+      },
+      workspace_members: { result: { data: { user_id: 'owner1' } } },
+      profiles: { result: { data: { plan: 'pro' } } },
+    })
+    expect(await verifyApiKey('raw')).toBeNull()
+  })
+
+  test('accepts a key whose expiry is in the future and stamps last use', async () => {
+    serviceClient = fakeClient({
+      api_keys: {
+        result: {
+          data: {
+            id: 'k1',
+            user_id: 'u1',
+            workspace_id: 'w1',
+            revoked_at: null,
+            expires_at: '2999-01-01T00:00:00Z',
+            last_used_at: null,
+          },
+        },
+      },
+      workspace_members: { result: { data: { user_id: 'owner1' } } },
+      profiles: { result: { data: { plan: 'pro' } } },
+    })
+    expect(await verifyApiKey('raw')).toEqual({ id: 'k1', plan: EPlan.PRO, workspace_id: 'w1' })
   })
 })
 

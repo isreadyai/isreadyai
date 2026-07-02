@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button, EButtonVariant } from '@/components/ui/button'
 import { ErrorScreen } from '@/components/error-screen'
+import { logger } from '@/lib/logger'
 
 // MARK: - Dashboard segment error boundary (friendly 500)
 //
@@ -21,7 +22,7 @@ export default function DashboardError({
   const t = useTranslations('error')
 
   useEffect(() => {
-    console.error('[dashboard] route error:', error)
+    logger.error('[dashboard] route error:', error)
   }, [error])
 
   return (

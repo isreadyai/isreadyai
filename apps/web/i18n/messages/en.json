@@ -254,10 +254,20 @@
     "ciColReport": "Latest report",
     "ciNoReportYet": "No report yet",
     "ciViewReport": "View report",
-    "ciEmptyTitle": "No CI reports yet",
-    "ciEmptyBody": "Add the audit action to a GitHub workflow with a Pro or Team API key to see repo-scoped CI reports and badges here.",
-    "ciEmptyWorkflowLabel": "Add to your GitHub Actions workflow",
-    "ciEmptyPlanNote": "CI reports and repo badges need a Pro or Team API key.",
+    "ciEmptyTitle": "Add isready.ai to your CI",
+    "ciEmptyBody": "The audit action gates deploys on a score threshold and can upload reports and badges for this repo. The fix action opens a pull request with AI-generated fixes automatically — and also uploads the report, so this dashboard fills in either way. Switch below to see either one.",
+    "ciWorkflowSwitchAria": "Choose CI action",
+    "ciAuditOption": "Audit",
+    "ciFixOption": "Fix",
+    "ciEmptyAuditStep1": "Add the snippet below to a GitHub Actions workflow.",
+    "ciEmptyAuditStep2": "Optional — create a Pro or Team API key to upload reports and unlock a repo badge.",
+    "ciEmptyAuditStep3": "Add it as the ISREADYAI_API_KEY repository secret.",
+    "ciEmptyFixStep1": "Create a Pro or Team API key.",
+    "ciEmptyFixStep2": "Add it as the ISREADYAI_API_KEY repository secret.",
+    "ciEmptyFixStep3": "Add the snippet below to a GitHub Actions workflow.",
+    "ciEmptyPlanNoteAudit": "api-key is optional for the audit action — add it to upload reports and unlock a repo-scoped badge (Pro or Team).",
+    "ciEmptyPlanNoteFix": "api-key is required for the fix action — auto-fix pull requests are a Pro or Team feature. Grant the job id-token: write to also upload the report and unlock the repo badge.",
+    "ciEmptyViewRepo": "View {action} on GitHub",
     "ciEmptyKeyCta": "Create an API key",
     "overviewSites": "Monitored sites",
     "overviewSitesDetail": "Tracked in your workspace",
@@ -528,7 +538,10 @@
     "submitting": "Creating account…",
     "continue": "Continue to payment",
     "haveAccount": "Already have an account?",
-    "login": "Log in"
+    "login": "Log in",
+    "checkEmailTitle": "Confirm your email",
+    "checkEmailBody": "We sent a confirmation link to {email}. Click it to verify your address and continue to payment.",
+    "checkEmailHint": "Didn't get it? Check your spam folder."
   },
   "hero": {
     "kicker": "Open-source · {count} real checks · free",
@@ -556,6 +569,48 @@
     "modeDeep": "Deep scan",
     "modeQuickHint": "Single-page audit — what crawlers and LLM bots receive right now.",
     "modeDeepHint": "Crawls multiple pages and runs the Smart Agent for a site-wide picture."
+  },
+  "heroVariants": {
+    "1": {
+      "lead": "Make your site",
+      "accent": "visible to AI.",
+      "subtitle": "ChatGPT, Perplexity and Gemini are the new front page. If they can't read you, your customers never see you. Scan your site and get the exact fixes to show up in their answers."
+    },
+    "2": {
+      "lead": "Don't just rank.",
+      "accent": "Get cited.",
+      "subtitle": "Your customers ask AI before they ask Google — and AI quotes only the sites it can actually read. See what ChatGPT, Perplexity and Gemini extract from yours, and the fixes that get you cited."
+    },
+    "3": {
+      "lead": "If AI can't read your site,",
+      "accent": "you're invisible.",
+      "subtitle": "Buying decisions now start inside ChatGPT, Perplexity and Gemini — and sites they can't parse simply never get mentioned. Find out what the AIs see, and fix it in minutes."
+    },
+    "4": {
+      "lead": "Your customers",
+      "accent": "stopped Googling.",
+      "subtitle": "They ask ChatGPT, Perplexity and Gemini now — and trust whatever those answers say. If your site isn't AI-readable, you're not in the conversation. See exactly what every AI sees, and how to get cited."
+    },
+    "5": {
+      "lead": "See your site",
+      "accent": "the way AI does.",
+      "subtitle": "Crawlers render your pages nothing like a browser. We show you exactly what ChatGPT, Perplexity and Gemini receive from your site — and the precise fixes that turn it into citations."
+    },
+    "6": {
+      "lead": "How ready is your site",
+      "accent": "for AI?",
+      "subtitle": "Run real checks against the same crawlers ChatGPT, Perplexity and Gemini use. Get a score, see what's blocking you, and ship the fixes that get you into AI answers — free, in about 5 seconds."
+    },
+    "7": {
+      "lead": "Right now, AI is recommending",
+      "accent": "your competitor.",
+      "subtitle": "When buyers ask ChatGPT, Perplexity or Gemini, one site gets named — and it isn't always the best one, just the most readable. See why, and take the spot back."
+    },
+    "8": {
+      "lead": "SEO got you found on Google.",
+      "accent": "This gets you cited by AI.",
+      "subtitle": "LLM crawlers ignore half of what makes a page rank. isready.ai runs {count} real checks on what ChatGPT, Perplexity and Gemini actually extract — and gives you the exact fixes to get cited."
+    }
   },
   "stats": {
     "performed": "checks performed",
@@ -633,11 +688,15 @@
     "point3": "score and grade outputs for downstream steps",
     "point4": "Free to run in any GitHub workflow",
     "marketplaceTag": "GitHub Action",
-    "usesLabel": "Use in your workflow",
+    "workflowSwitchAria": "Choose GitHub Action",
+    "auditOption": "Audit",
+    "fixOption": "Fix",
     "copy": "copy",
     "copied": "copied ✓",
+    "auditActionText": "isreadyai/audit-action@v1 scores every deploy against a threshold and writes the full report to the job summary. Add api-key to also upload the report and unlock a repo-scoped badge (Pro or Team).",
+    "fixActionText": "isreadyai/fix-action@v1 scans the URL, runs an AI agent inside your own runner to apply the minimal fixes, and opens a pull request for you to review. Requires a Pro or Team API key.",
     "badgeLabel": "Live README badge",
-    "badgeText": "Served live by isready.ai for your verified domain (Pro & Team) and re-scanned on a schedule — it stays current on its own, no CI step. Copy the Markdown into your README.",
+    "badgeText": "Served live by isready.ai for your verified domain (Pro & Team) and re-scanned on a schedule — it stays current on its own, no CI step. Copy the Markdown into your README. Prefer a badge scoped to this repo and branch instead? Add api-key to the workflow above to get one from CI.",
     "badgeAlt": "AI Ready badge example",
     "viewOnGithub": "View on GitHub",
     "viewOnGithubAria": "View on GitHub (opens in a new tab)"
@@ -735,9 +794,11 @@
     "q5": "Does llms.txt help AI crawlers find my content?",
     "a5": "It can't hurt, but don't expect miracles: no major AI provider has confirmed consuming it, and Google has said it doesn't use it. We report it as informational and never let it affect your score.",
     "q6": "Can I run this in CI or from the terminal?",
-    "a6": "Yes. Run npx isreadyai yourdomain.com for the full audit in your terminal, with --json for machines and --llm for a fix plan you can paste into an AI coding agent. The GitHub Action gates deployments on a minimum score and writes the full report to the job summary.",
+    "a6": "Yes. Run npx isreadyai yourdomain.com for the full audit in your terminal, with --json for machines and --llm for a fix plan you can paste into an AI coding agent. The isreadyai/audit-action@v1 GitHub Action gates deployments on a minimum score and writes the full report to the job summary. Add api-key (Pro/Team) and grant the job permissions: id-token: write to also upload the report and unlock a branch-stable repo badge for that repo and branch.",
     "q7": "Why does AI readability matter?",
-    "a7": "Your customers ask ChatGPT, Perplexity and Gemini before they ask Google. If AI can't read your site, you're invisible in the answers they trust — no matter how well you rank on classic search. isready.ai shows you exactly what every AI sees and the precise fixes to get cited."
+    "a7": "Your customers ask ChatGPT, Perplexity and Gemini before they ask Google. If AI can't read your site, you're invisible in the answers they trust — no matter how well you rank on classic search. isready.ai shows you exactly what every AI sees and the precise fixes to get cited.",
+    "q8": "Can isready.ai open pull requests to fix issues automatically?",
+    "a8": "Yes, on Pro and Team plans. Add isreadyai/fix-action@v1 to a workflow with an ISREADYAI_API_KEY secret and permissions: contents: write, pull-requests: write plus id-token: write (the run also uploads the CI report and unlocks the repo badge); it scans the URL, runs an AI agent inside your own runner to apply the minimal fixes, and opens a pull request for you to review."
   },
   "report": {
     "title": "AI readiness report",

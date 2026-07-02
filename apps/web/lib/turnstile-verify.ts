@@ -2,16 +2,19 @@
 
 const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
 
+function isProduction(): boolean {
+  return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
+}
+
 /**
- * Verifies a Turnstile token against `TURNSTILE_SECRET_KEY`, returning true only
- * on a confirmed success. When no secret is configured (local/dev, or before the
- * secret is wired into the app env) verification is skipped so the form stays
- * usable — the route's rate-limit still bounds abuse. Production sets the secret.
+ * Verifies a Turnstile token against `TURNSTILE_SECRET_KEY`. With no secret it
+ * fails open in dev (the form stays usable) but fails closed in production, so a
+ * missing secret can't silently disable the captcha.
  */
 export async function verifyTurnstile(token: string, ip?: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY ?? ''
   if (secret === '') {
-    return true
+    return !isProduction()
   }
   if (token === '') {
     return false

@@ -31,8 +31,8 @@
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
-    "oxfmt": "^0.55.0",
-    "supabase": "^2.107.0",
+    "oxfmt": "^0.57.0",
+    "supabase": "^2.108.0",
     "typescript": "~6.0.3"
   }
 }
