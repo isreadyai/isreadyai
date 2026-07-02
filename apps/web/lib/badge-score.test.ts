@@ -7,7 +7,7 @@ import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test'
 // (lowercased, leading `www.` stripped — see addTrackedDomain), so the lookup MUST
 // canonicalize the requested host the SAME way. Otherwise `/badge/www.deluisa.bio`
 // (or a mixed-case host) misses the row and a verified/paid site wrongly falls
-// through to the locked "premium" badge instead of showing its latest score.
+// through to the locked badge instead of showing its latest score.
 //
 // Anti-leak design mirrors api-keys.test.ts: `isSupabaseConfigured` is left REAL
 // (driven by env), and the whole service client — including the owner-plan gate

@@ -24,20 +24,20 @@ describe('badge route (tokenless)', () => {
   test('locked badge for an invalid host', async () => {
     const response = await call('localhost.svg')
     expect(response.status).toBe(200)
-    expect(await response.text()).toContain('premium')
+    expect(await response.text()).toContain('locked')
   })
 
   test('locked badge when the domain is not a verified premium site', async () => {
     scoreResult = null
     const response = await call('example.com.svg')
-    expect(await response.text()).toContain('premium')
+    expect(await response.text()).toContain('locked')
   })
 
   test('real badge for a verified premium domain', async () => {
     scoreResult = { score: 92, grade: 'excellent' }
     const response = await call('example.com.svg')
     const body = await response.text()
-    expect(body).not.toContain('premium')
+    expect(body).not.toContain('locked')
     expect(body).toContain('AI ready')
     expect(body).toContain('92')
   })
@@ -45,7 +45,7 @@ describe('badge route (tokenless)', () => {
   // The locked badge is a TRANSIENT ineligible state: the moment the owner
   // verifies, upgrades and activates, the real score must appear. Serving it with
   // a day-long stale-while-revalidate made a now-eligible site keep showing the
-  // locked "premium" badge for up to 24h (the reported deluisa.bio bug). It must
+  // locked badge for up to 24h (the reported deluisa.bio bug). It must
   // therefore carry a short TTL and a short revalidation window.
   test('locked badge is cached only briefly (no day-long stale window)', async () => {
     scoreResult = null

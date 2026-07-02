@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Web app (`apps/web`)
+
+- **Locked public badge wording is neutral**: the badge shown for any ineligible domain (invalid host, unverified, not upgraded, not activated) used to read "premium", implying that ineligibility always meant a plan gate. It now reads "locked", which is accurate regardless of the cause.
+
 ### Fixed
 
 #### Web app (`apps/web`)

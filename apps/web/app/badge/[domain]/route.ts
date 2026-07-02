@@ -24,7 +24,7 @@ interface ICacheTtl {
 // The locked badge is a TRANSIENT ineligible state: the instant the owner
 // verifies, upgrades and activates, the real score must take over. Caching it
 // with a day-long stale-while-revalidate kept a now-eligible site showing the
-// locked "premium" badge for up to 24h (the deluisa.bio bug). Give it a short TTL
+// locked badge for up to 24h (the deluisa.bio bug). Give it a short TTL
 // and an equally short revalidation window so the flip to the real score is ~1min.
 const LOCKED_TTL: ICacheTtl = { sMaxAge: 60, swr: 60 }
 // Eligible but not yet scored — a scan is imminent, so keep it fresh-ish.
