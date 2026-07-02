@@ -27,7 +27,7 @@ export function badgeSvg(score: number | null, grade: TGrade | null): string {
 }
 
 export function lockedBadgeSvg(): string {
-  return renderBadge('premium', '#7c3aed', 'AI readiness badge: premium access required')
+  return renderBadge('locked', '#9f9f9f', 'AI readiness badge: not available')
 }
 
 export function badgeDataUrl(score: number | null, grade: TGrade | null): string {
