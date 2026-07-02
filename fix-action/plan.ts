@@ -1,8 +1,10 @@
 #!/usr/bin/env bun
-// Fetches a tailored AI fix plan from isready.ai and writes it into the PR body
-// (so the opened pull request carries it) and the GitHub job summary (so it
-// surfaces even when no files changed). Best-effort: any failure exits 0 so it
-// never fails the fix run.
+/**
+ * Fetches a tailored AI fix plan from isready.ai and writes it into the PR body
+ * (so the opened pull request carries it) and the GitHub job summary (so it
+ * surfaces even when no files changed). Best-effort: any failure exits 0 so it
+ * never fails the fix run.
+ */
 
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

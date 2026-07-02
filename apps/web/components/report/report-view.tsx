@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl'
 import { aggregateSiteFindings, ECategory, gradeOf } from '@isreadyai/scanner'
 import { aiSearchScore, combinedScore, deepTrackScore, smartTrackScore } from '@/lib/score'
 import { deepScanLimit } from '@/lib/deep-scan'
+import { recallScanWriteToken, rememberScanWriteToken } from '@/lib/scan-write-token-client'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { prefersReducedMotion } from '@/lib/motion'
@@ -107,7 +108,10 @@ export function ReportView({
         setRescanning(false)
         return
       }
-      const data = (await response.json()) as { id: string }
+      const data = (await response.json()) as { id: string; writeToken?: string }
+      if (data.writeToken !== undefined) {
+        rememberScanWriteToken(data.id, data.writeToken)
+      }
       // Re-run in the same mode: a deep report re-runs deep (?deep=true auto-starts
       // the crawl on the new scan); a single-page report stays single-page.
       const base = isDashboard ? `/dashboard/scans/${data.id}` : `/report/${data.id}`
@@ -161,9 +165,14 @@ export function ReportView({
           const compressed = await new Response(
             new Blob([bodyStr]).stream().pipeThrough(new CompressionStream('gzip')),
           ).arrayBuffer()
+          const writeToken = recallScanWriteToken(id)
           await fetch(`/api/scan/${id}`, {
             method: 'PATCH',
-            headers: { 'content-type': 'application/json', 'x-content-encoding': 'gzip' },
+            headers: {
+              'content-type': 'application/json',
+              'x-content-encoding': 'gzip',
+              ...(writeToken !== null ? { 'x-scan-write-token': writeToken } : {}),
+            },
             body: compressed,
           })
         } catch {

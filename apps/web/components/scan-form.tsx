@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 import { notify } from '@/components/ui/toast'
 import { useAccount } from '@/lib/use-account'
+import { rememberScanWriteToken } from '@/lib/scan-write-token-client'
 
 const SCAN_FORM_MODES = ['quick', 'deep'] as const
 type TScanFormMode = (typeof SCAN_FORM_MODES)[number]
@@ -76,7 +77,10 @@ export function ScanForm({
         inFlight.current = false
         return
       }
-      const data = (await response.json()) as { id: string }
+      const data = (await response.json()) as { id: string; writeToken?: string }
+      if (data.writeToken !== undefined) {
+        rememberScanWriteToken(data.id, data.writeToken)
+      }
       // Signed-in scans open in the dashboard (premium-aware, owner-scoped); the
       // public form keeps routing to the shareable /report page. ?deep=true
       // auto-starts the deep crawl.

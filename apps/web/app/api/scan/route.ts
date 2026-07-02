@@ -7,8 +7,8 @@ import { runScan } from '@/lib/run-scan'
 import { smartAgentEnabledForScan } from '@/lib/smart-agent/smart-pref'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getActiveWorkspaceId } from '@/lib/workspace'
-import { hostOf } from '@/lib/url'
-import { signProxyToken } from '@/lib/proxy-token'
+import { signScanWriteToken } from '@/lib/scan-write-token'
+import { clientIp } from '@/lib/client-ip'
 
 // MARK: - POST /api/scan
 
@@ -28,33 +28,6 @@ const BodySchema = z.object({
 // trusted IP header (local dev) every request shares one bucket.
 const RATE_LIMIT = 30
 const RATE_WINDOW_MS = 60_000
-
-/**
- * The connecting client IP from a trusted source. On Vercel `x-real-ip` is set
- * by the platform to the actual edge-connecting IP and cannot be overridden by
- * the caller, so it is preferred. The `x-forwarded-for` fallback takes the
- * RIGHTMOST entry — the hop appended by our own proxy — because the leftmost
- * entries are attacker-supplied and trivially spoofable. Without either header
- * (local dev) all requests share the single 'local' bucket.
- */
-function clientIp(request: Request): string {
-  const realIp = request.headers.get('x-real-ip')?.trim()
-  if (realIp !== undefined && realIp !== '') {
-    return realIp
-  }
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded !== null) {
-    const hops = forwarded
-      .split(',')
-      .map((hop) => hop.trim())
-      .filter((hop) => hop !== '')
-    const trusted = hops[hops.length - 1]
-    if (trusted !== undefined) {
-      return trusted
-    }
-  }
-  return 'local'
-}
 
 async function hashIp(ip: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip))
@@ -112,8 +85,11 @@ export async function POST(request: Request): Promise<NextResponse> {
   const smart = await smartAgentEnabledForScan(validated.url)
   after(() => runScan(record.id, { smart }))
 
+  // No proxyToken here: the deep-scan relay token is issued server-side by the
+  // report page (scoped to that view), so this anonymous endpoint never hands one
+  // out — closing the open-relay-token vector.
   return NextResponse.json(
-    { id: record.id, status: record.status, proxyToken: signProxyToken(hostOf(validated.url)) },
+    { id: record.id, status: record.status, writeToken: signScanWriteToken(record.id) },
     { status: 202 },
   )
 }

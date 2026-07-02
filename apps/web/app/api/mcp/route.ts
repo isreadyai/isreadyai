@@ -4,6 +4,7 @@ import { verifyApiKey } from '@/lib/api-keys'
 import type { IApiKey } from '@/lib/api-key-types'
 import { findTool, toolDescriptors } from '@/lib/mcp/tools'
 import { isPaidPlan } from '@/lib/plans'
+import { consumeRateLimit } from '@/lib/rate-limit'
 
 // MARK: - POST /api/mcp — Streamable-HTTP MCP server
 //
@@ -18,6 +19,10 @@ export const maxDuration = 300
 
 const PROTOCOL_VERSION = '2025-06-18'
 const SERVER_INFO = { name: 'isready.ai', version: '1.0.0' } as const
+// Bound infrastructure load: MCP usage is metered but not entitlement-capped.
+const MAX_BATCH = 50
+const RATE_WINDOW_MS = 60_000
+const RATE_LIMIT = 120
 
 // MARK: - JSON-RPC plumbing
 
@@ -46,6 +51,16 @@ function ok(id: TId, result: unknown): Record<string, unknown> {
 
 function fail(id: TId, code: number, message: string): Record<string, unknown> {
   return { jsonrpc: JSON_RPC, id, error: { code, message } }
+}
+
+/** True when a JSON-RPC batch exceeds the per-request tool-call cap. */
+export function batchTooLarge(body: unknown): boolean {
+  return Array.isArray(body) && body.length > MAX_BATCH
+}
+
+/** Rate-limit units a request bills: one per batch item, one for a single call. */
+export function rateLimitUnits(body: unknown): number {
+  return Array.isArray(body) ? body.length : 1
 }
 
 function isRpcRequest(value: unknown): value is IRpcRequest {
@@ -93,6 +108,22 @@ async function meter(key: IApiKey): Promise<void> {
   } catch {
     // Intentionally swallowed: see above.
   }
+}
+
+// MARK: - Rate limiting
+
+/**
+ * Charges `units` against the per-key window, one unit per JSON-RPC item, and
+ * short-circuits on the first rejection so a batch can't slip through on a
+ * single-unit charge. `units` is bounded by MAX_BATCH (see `batchTooLarge`).
+ */
+async function chargeRateLimit(keyId: string, units: number): Promise<boolean> {
+  for (let i = 0; i < units; i++) {
+    if (!(await consumeRateLimit(`mcp:${keyId}`, RATE_WINDOW_MS, RATE_LIMIT))) {
+      return false
+    }
+  }
+  return true
 }
 
 // MARK: - Method dispatch
@@ -194,6 +225,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     body = await request.json()
   } catch {
     return NextResponse.json(fail(null, ERR.PARSE, 'invalid JSON'), { status: 400 })
+  }
+
+  if (batchTooLarge(body)) {
+    return NextResponse.json(fail(null, ERR.INVALID_REQUEST, 'batch too large'), { status: 400 })
+  }
+
+  // Charge per batch item (cap-bounded above) so a batch costs as much budget as
+  // the calls it carries — not one flat unit per request.
+  if (!(await chargeRateLimit(key.id, rateLimitUnits(body)))) {
+    return NextResponse.json(fail(null, ERR.INVALID_REQUEST, 'rate limited'), { status: 429 })
   }
 
   // JSON-RPC allows a batch (array) or a single request object.

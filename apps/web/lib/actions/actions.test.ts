@@ -6,9 +6,12 @@ import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 // plan-gating branches can be exercised without a live database; RLS itself is
 // enforced in Postgres and covered by the migration + badge route tests.
 
-type TResult = { data?: unknown; error?: unknown }
+type TResult = { data?: unknown; error?: unknown; count?: unknown }
 
-function fakeClient(opts: { user?: { id: string } | null; result?: TResult }) {
+function fakeClient(opts: {
+  user?: { id: string; is_anonymous?: boolean } | null
+  result?: TResult
+}) {
   const result = opts.result ?? { data: null, error: null }
   const builder: Record<string, unknown> = {}
   const chain = (): Record<string, unknown> => builder
@@ -32,7 +35,7 @@ function fakeClient(opts: { user?: { id: string } | null; result?: TResult }) {
   builder.then = (resolve: (v: TResult) => unknown): unknown => resolve(result)
   return {
     auth: {
-      getUser: (): Promise<{ data: { user: { id: string } | null } }> =>
+      getUser: (): Promise<{ data: { user: { id: string; is_anonymous?: boolean } | null } }> =>
         Promise.resolve({ data: { user: opts.user ?? null } }),
     },
     from: (): Record<string, unknown> => builder,
@@ -108,6 +111,18 @@ describe('createApiKey', () => {
       throw new Error(out.error)
     }
     expect(out.rawKey.startsWith('isr_')).toBe(true)
+  })
+
+  test('refuses to mint past the workspace key quota', async () => {
+    sessionClient = fakeClient({ user: { id: 'u1' }, result: { data: { plan: 'free' } } })
+    // Owner resolves to free (maxApiKeys = 1) and one live key already exists.
+    serviceClient = fakeClient({ result: { data: { user_id: 'owner1', plan: 'free' }, count: 1 } })
+    expect(await createApiKey('label')).toEqual({ ok: false, error: 'upgrade_required' })
+  })
+
+  test('rejects an anonymous caller', async () => {
+    sessionClient = fakeClient({ user: { id: 'anon', is_anonymous: true } })
+    expect(await createApiKey('label')).toEqual({ ok: false, error: 'anonymous_forbidden' })
   })
 })
 

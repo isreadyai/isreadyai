@@ -63,6 +63,31 @@ function requireEnv(name: string): string | null {
 }
 
 /**
+ * Mints a GitHub Actions OIDC token bound to `audience`, which proves to
+ * isready.ai that this run executes inside its repository (defeating repo-badge
+ * squatting). Returns null when the job lacks `permissions: id-token: write` — the
+ * runner then omits the request env vars — or the mint request fails.
+ *
+ * @param {string} audience - The audience claim to request (the isready.ai API origin).
+ * @returns {Promise<string | null>} The signed OIDC JWT, or null when unavailable.
+ */
+async function mintOidcToken(audience: string): Promise<string | null> {
+  const requestUrl = requireEnv('ACTIONS_ID_TOKEN_REQUEST_URL')
+  const requestToken = requireEnv('ACTIONS_ID_TOKEN_REQUEST_TOKEN')
+  if (requestUrl === null || requestToken === null) {
+    return null
+  }
+  const res = await fetch(`${requestUrl}&audience=${encodeURIComponent(audience)}`, {
+    headers: { authorization: `Bearer ${requestToken}` },
+  }).catch(() => null)
+  if (res === null || !res.ok) {
+    return null
+  }
+  const data = (await res.json().catch(() => null)) as { value?: string } | null
+  return data?.value ?? null
+}
+
+/**
  * Sets a GitHub Actions output variable by writing to GITHUB_OUTPUT.
  *
  * @param {string} name - The name of the output variable.
@@ -94,9 +119,21 @@ const url =
   (report as { primary?: { finalUrl?: string } }).primary?.finalUrl ??
   ''
 
+const oidcToken = await mintOidcToken(apiUrl)
+if (oidcToken === null) {
+  warn(
+    'isready CI upload skipped — no GitHub OIDC token. Grant the job `permissions: id-token: write` so isready.ai can verify repository ownership.',
+  )
+  process.exit(0)
+}
+
 const response = await fetch(`${apiUrl}/api/ci-report`, {
   method: 'POST',
-  headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+  headers: {
+    authorization: `Bearer ${apiKey}`,
+    'content-type': 'application/json',
+    'x-github-oidc': oidcToken,
+  },
   body: JSON.stringify({ repositoryId, ownerRepo, branch, commit, url, report }),
 }).catch(() => null)
 
@@ -109,7 +146,17 @@ if (response.status === 401) {
   process.exit(0)
 }
 if (response.status === 403) {
-  warn('isready CI upload skipped — the repo badge requires a Pro or Team plan')
+  const code = await response
+    .json()
+    .then((body) => (body as { error?: string }).error)
+    .catch(() => undefined)
+  if (code === 'repo_ownership_not_verified') {
+    warn(
+      'isready CI upload skipped — repository ownership could not be verified. Ensure the job has `permissions: id-token: write`.',
+    )
+  } else {
+    warn('isready CI upload skipped — the repo badge requires a Pro or Team plan')
+  }
   process.exit(0)
 }
 if (!response.ok) {

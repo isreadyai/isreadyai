@@ -519,7 +519,10 @@
     "submitting": "Creating account…",
     "continue": "Continue to payment",
     "haveAccount": "Already have an account?",
-    "login": "Log in"
+    "login": "Log in",
+    "checkEmailTitle": "Confirm your email",
+    "checkEmailBody": "We sent a confirmation link to {email}. Click it to verify your address and continue to payment.",
+    "checkEmailHint": "Didn't get it? Check your spam folder."
   },
   "hero": {
     "kicker": "Open-source · {count} real checks · free",
@@ -547,6 +550,48 @@
     "modeDeep": "Deep scan",
     "modeQuickHint": "Single-page audit — what crawlers and LLM bots receive right now.",
     "modeDeepHint": "Crawls multiple pages and runs the Smart Agent for a site-wide picture."
+  },
+  "heroVariants": {
+    "1": {
+      "lead": "Make your site",
+      "accent": "visible to AI.",
+      "subtitle": "ChatGPT, Perplexity and Gemini are the new front page. If they can't read you, your customers never see you. Scan your site and get the exact fixes to show up in their answers."
+    },
+    "2": {
+      "lead": "Don't just rank.",
+      "accent": "Get cited.",
+      "subtitle": "Your customers ask AI before they ask Google — and AI quotes only the sites it can actually read. See what ChatGPT, Perplexity and Gemini extract from yours, and the fixes that get you cited."
+    },
+    "3": {
+      "lead": "If AI can't read your site,",
+      "accent": "you're invisible.",
+      "subtitle": "Buying decisions now start inside ChatGPT, Perplexity and Gemini — and sites they can't parse simply never get mentioned. Find out what the AIs see, and fix it in minutes."
+    },
+    "4": {
+      "lead": "Your customers",
+      "accent": "stopped Googling.",
+      "subtitle": "They ask ChatGPT, Perplexity and Gemini now — and trust whatever those answers say. If your site isn't AI-readable, you're not in the conversation. See exactly what every AI sees, and how to get cited."
+    },
+    "5": {
+      "lead": "See your site",
+      "accent": "the way AI does.",
+      "subtitle": "Crawlers render your pages nothing like a browser. We show you exactly what ChatGPT, Perplexity and Gemini receive from your site — and the precise fixes that turn it into citations."
+    },
+    "6": {
+      "lead": "How ready is your site",
+      "accent": "for AI?",
+      "subtitle": "Run real checks against the same crawlers ChatGPT, Perplexity and Gemini use. Get a score, see what's blocking you, and ship the fixes that get you into AI answers — free, in about 5 seconds."
+    },
+    "7": {
+      "lead": "Right now, AI is recommending",
+      "accent": "your competitor.",
+      "subtitle": "When buyers ask ChatGPT, Perplexity or Gemini, one site gets named — and it isn't always the best one, just the most readable. See why, and take the spot back."
+    },
+    "8": {
+      "lead": "SEO got you found on Google.",
+      "accent": "This gets you cited by AI.",
+      "subtitle": "LLM crawlers ignore half of what makes a page rank. isready.ai runs {count} real checks on what ChatGPT, Perplexity and Gemini actually extract — and gives you the exact fixes to get cited."
+    }
   },
   "stats": {
     "performed": "checks performed",

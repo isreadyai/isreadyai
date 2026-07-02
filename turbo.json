@@ -1,5 +1,5 @@
 {
-  "$schema": "https://v2-9-18.turborepo.dev/schema.json",
+  "$schema": "https://v2-10-2.turborepo.dev/schema.json",
   "ui": "tui",
   "globalDependencies": ["tsconfig.base.json", ".env"],
   "globalEnv": ["NEXT_PUBLIC_*", "ENABLE_ADMIN_PREVIEW"],
@@ -25,6 +25,10 @@
     "VERCEL_OIDC_TOKEN",
     "PROXY_RATE_LIMIT",
     "PROXY_TOKEN_SECRET",
+    "PROXY_TOKEN_DEFAULT_SECRET",
+    "PROXY_TOKEN_TTL_MS",
+    "SCAN_WRITE_TOKEN_TTL_MS",
+    "API_KEY_LAST_USED_THROTTLE_MS",
     "SMART_DEEP_PAGE_LIMIT",
     "SMART_DEEP_CONCURRENCY",
     "FIX_PLAN_MODEL",
