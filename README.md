@@ -46,6 +46,7 @@
     <li><a href="#the-score">The Score</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#acknowledgements">Acknowledgements</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
   </ol>
@@ -385,9 +386,25 @@ Contributions make the open-source community an amazing place to learn and creat
 4. Commit (`git commit -m 'feat(scanner): add amazing check'`)
 5. Push and open a pull request
 
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup, the full check suite to run
-before a PR, and a step-by-step recipe for adding a new scanner check. Engineering
-and UI conventions are documented in [`CONVENTIONS.md`](./CONVENTIONS.md).
+Before opening a PR, run the full check suite from the repo root:
+
+```sh
+bun run lint         # oxlint
+bun run format       # oxfmt
+bun run test         # all workspace tests
+bun run type-check   # tsc across workspaces
+bun run build        # build all workspaces
+```
+
+Adding a scanner check, in short:
+
+1. Create the module in `packages/scanner/src/checks/<category>/` with `defineCheck()`.
+2. Register it in that category's `index.ts`.
+3. Add a `<name>.test.ts` covering pass, fail and edge cases.
+4. Bump `PUBLISHED_CHECK_COUNT` in `checks/registry.test.ts` and the matching marketing copy.
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full setup and recipe walkthrough.
+Engineering and UI conventions are documented in [`CONVENTIONS.md`](./CONVENTIONS.md).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

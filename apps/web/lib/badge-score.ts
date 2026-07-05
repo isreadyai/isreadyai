@@ -3,7 +3,7 @@ import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
 import { gradeOf, isScanReport } from '@isreadyai/scanner'
 import { isPaidPlan } from '@/lib/plans'
 import { combinedScoreFromRow } from '@/lib/score'
-import { hostOf } from '@/lib/url'
+import { hostOf, normalizeHost as canonicalHost } from '@/lib/url'
 import { ownerPlanForWorkspace } from '@/lib/workspace'
 
 // MARK: - Persisted badge score
@@ -33,10 +33,14 @@ export async function verifiedDomainBadgeScore(host: string): Promise<IBadgeScor
     return null
   }
   const client = await createServiceClient()
+  // `websites.host` is stored canonicalized (lowercased, leading `www.` stripped —
+  // see addTrackedDomain), so the lookup must canonicalize the requested host the
+  // SAME way. Otherwise `/badge/www.deluisa.bio` or a mixed-case host misses the
+  // row and a verified/paid site wrongly falls through to the locked badge.
   const { data: domain } = await client
     .from('websites')
     .select('workspace_id, badge_enabled, public_report_id')
-    .eq('host', host)
+    .eq('host', canonicalHost(host))
     .not('verified_at', 'is', null)
     .order('verified_at', { ascending: false })
     .limit(1)
