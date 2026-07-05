@@ -1,6 +1,6 @@
 {
   "name": "isreadyai",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Is Ready for AI — audit whether a website or SaaS is readable, crawlable and optimized for LLMs and AI search engines.",
   "license": "SEE LICENSE IN LICENSE",
