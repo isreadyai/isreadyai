@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Web app (`apps/web`)
+
+- **Locked public badge wording is neutral**: the badge shown for any ineligible domain (invalid host, unverified, not upgraded, not activated) used to read "premium", implying that ineligibility always meant a plan gate. It now reads "locked", which is accurate regardless of the cause.
+
+### Fixed
+
+#### Web app (`apps/web`)
+
+- **Public badge no longer sticks on "premium" after a site goes live** (`/badge/[domain]`): the locked badge was cached with a 24h `stale-while-revalidate`, so a domain that had just been verified, upgraded and badge-activated kept serving the stale locked "premium" badge for up to a day even though the origin already returned the real score. The locked (and not-yet-scored) badge now carries a short TTL and revalidation window, so the flip to the live score happens within ~a minute.
+- **Badge lookup canonicalizes the host** (`verifiedDomainBadgeScore`): `websites.host` is stored lowercased with a leading `www.` stripped, but the badge lookup compared the raw request host — so `/badge/www.deluisa.bio` (or a mixed-case host) missed the row and wrongly fell through to the locked badge. The lookup now normalizes the host the same way it is stored.
+
+### Documentation
+
+- README `## Contributing` now includes the pre-PR check suite (`lint`, `format`, `test`, `type-check`, `build`) and a short summary of the scanner-check recipe, pointing to `CONTRIBUTING.md` for the full detail.
+
 ## [0.2.0] - 2026-07-02
+
 ### Changed
 
 #### GitHub Action (`action.yml`)
