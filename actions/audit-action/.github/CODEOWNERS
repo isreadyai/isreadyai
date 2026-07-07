@@ -1,0 +1,6 @@
+# This repository is generated from isreadyai/isreadyai and synced on release.
+# Direct PRs here are rare (the tree is a build output); this gates the exceptions.
+#
+# Owner resolved from the authenticated `gh` session at bootstrap time. Replace
+# with an `isreadyai` org team once one exists for this repo.
+* @massimodeluisa

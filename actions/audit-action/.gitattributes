@@ -1,0 +1,3 @@
+# Collapse the generated bundle's diffs in PR reviews — same pattern
+# actions/checkout and other bundled actions use for their dist/.
+dist/** linguist-generated=true

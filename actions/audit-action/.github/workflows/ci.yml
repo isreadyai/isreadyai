@@ -1,0 +1,64 @@
+name: ci
+
+# Validates this generated action tree on every push/PR: parses action.yml,
+# smoke-tests the committed dist/ bundles directly, then runs the composite
+# action itself (uses: ./) end-to-end against a public test URL. The README
+# badge (actions/workflow/status/isreadyai/audit-action/ci.yml) points at this
+# workflow, so the filename must stay ci.yml.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 20
+
+      - name: Validate action.yml
+        run: npx -y js-yaml@4.1.0 action.yml > /dev/null
+
+      - name: Smoke test dist/ bundles
+        run: |
+          set -euo pipefail
+
+          node dist/scan.js https://example.com --deep --json > /tmp/report.json
+          grep -q '"overall"' /tmp/report.json
+
+          node dist/summary.js /tmp/report.json > /tmp/summary.md
+          test -s /tmp/summary.md
+
+          # No api-key set: must warn and exit 0, never fail the run.
+          node dist/ci-upload.js
+
+      - name: Self-test — run the action end-to-end
+        id: isready
+        uses: ./
+        with:
+          url: https://example.com
+          threshold: 1
+
+      - name: Assert score/grade outputs are set
+        run: |
+          set -euo pipefail
+          if [ -z "${{ steps.isready.outputs.score }}" ]; then
+            echo "::error::score output is empty"
+            exit 1
+          fi
+          if [ -z "${{ steps.isready.outputs.grade }}" ]; then
+            echo "::error::grade output is empty"
+            exit 1
+          fi
+          echo "isready: score=${{ steps.isready.outputs.score }} grade=${{ steps.isready.outputs.grade }}"

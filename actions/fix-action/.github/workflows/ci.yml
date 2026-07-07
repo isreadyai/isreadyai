@@ -1,0 +1,53 @@
+name: ci
+
+# Validates this generated action tree on every push/PR: parses action.yml,
+# then smoke-tests the committed dist/ bundles directly. No end-to-end run of
+# the fix action itself here — that needs a Pro/Team api-key secret; see the
+# audit-action companion repo for a full `uses: ./` self-test. The README
+# badge (actions/workflow/status/isreadyai/fix-action/ci.yml) points at this
+# workflow, so the filename must stay ci.yml.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 20
+
+      - name: Validate action.yml
+        run: npx -y js-yaml@4.1.0 action.yml > /dev/null
+
+      - name: Smoke test scan bundle
+        run: |
+          set -euo pipefail
+          node dist/scan.js https://example.com --json > /tmp/report.json
+          grep -q '"overall"' /tmp/report.json
+
+      - name: Smoke test solve bundle (must fail without SOLVE_TOKEN)
+        run: |
+          set -euo pipefail
+          if ! node dist/solve.js > /tmp/solve.out 2>&1; then
+            grep -q 'missing SOLVE_TOKEN' /tmp/solve.out
+            echo "isready: dist/solve.js correctly rejected a missing SOLVE_TOKEN"
+          else
+            echo "::error::dist/solve.js unexpectedly exited 0 without SOLVE_TOKEN"
+            cat /tmp/solve.out
+            exit 1
+          fi
+
+      - name: Smoke test plan bundle
+        run: node dist/plan.js

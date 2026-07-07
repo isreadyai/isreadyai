@@ -1,0 +1,12 @@
+# Dependencies (this action ships zero runtime deps; only relevant to local tooling)
+node_modules/
+
+# OS / editors
+.DS_Store
+*.log
+
+# Scratch
+tmp/
+
+# NOTE: dist/ is intentionally NOT ignored — it is the committed, published
+# action bundle (see SYNCED.md). Never add it here.
