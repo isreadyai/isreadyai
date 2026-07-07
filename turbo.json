@@ -1,5 +1,5 @@
 {
-  "$schema": "https://v2-10-2.turborepo.dev/schema.json",
+  "$schema": "https://v2-10-3.turborepo.dev/schema.json",
   "ui": "tui",
   "globalDependencies": ["tsconfig.base.json", ".env"],
   "globalEnv": ["NEXT_PUBLIC_*", "ENABLE_ADMIN_PREVIEW"],
