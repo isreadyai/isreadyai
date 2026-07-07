@@ -1,0 +1,249 @@
+name: 'IsReadyAI — readiness fix'
+description: 'Runs an AI agent inside your runner that applies AI-readiness fixes to your repo and opens a pull request. Pro/Team key.'
+author: 'Smart Squad S.r.l. (https://smartsquad.io)'
+branding:
+  icon: 'git-pull-request'
+  color: 'green'
+
+inputs:
+  url:
+    description: 'URL to audit (e.g. the production or preview deployment)'
+    required: true
+  api-key:
+    description: 'isready.ai API key, Pro or Team (store it as a repo secret). Grant the job id-token: write to also upload the CI report + repo badge.'
+    required: true
+  api-url:
+    description: 'isready.ai API origin (override for self-hosted deployments)'
+    required: false
+    default: 'https://isready.ai'
+  branch:
+    description: 'Branch name for the fix PR'
+    required: false
+    default: 'feature/ai-readiness-fixes'
+  dry-run:
+    description: 'Apply edits and print the summary without opening a PR'
+    required: false
+    default: 'false'
+
+outputs:
+  patches:
+    description: 'Number of files the agent changed'
+    value: ${{ steps.solve.outputs.patches }}
+  pr-url:
+    description: 'URL of the opened pull request (empty when none)'
+    value: ${{ steps.pr.outputs.pr-url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Preflight — pull-request & upload capability
+      # Verify the two things this run needs BEFORE the metered solve token is
+      # minted (that costs inference quota), so a misconfigured job fails or warns
+      # at the top of the log instead of after the expensive work:
+      #   • upload capability (id-token: write) — a visible WARNING, never fatal,
+      #     because the report upload is best-effort and must not block the PR;
+      #   • pull-request capability — an authoritative, side-effect-free probe of
+      #     the two gates that let github.token open a PR; skipped on dry-run.
+      # Only an authoritative POSITIVE signal fails the run; anything we cannot
+      # read is a note, never a false block (a wrong block wastes a good fix run).
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        DRY_RUN: ${{ inputs.dry-run }}
+      run: |
+        set -euo pipefail
+        # --- Upload capability (checked even on dry-run: the report upload is not
+        #     gated on PR creation). This action REQUIRES an api-key for the fix
+        #     itself, so a set key does not signal upload opt-in the way the audit
+        #     action's optional key does — a missing id-token here is surfaced as a
+        #     loud warning, never a hard failure that would block the fix PR.
+        if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+          echo "::warning::isready.ai will NOT upload this scan to your CI Reports dashboard — the job is missing 'permissions: id-token: write' (needed for the OIDC repo-ownership proof). Add it to populate the dashboard + repo badge; the fix pull request is unaffected."
+        fi
+        # --- Pull-request capability (skipped on dry-run: no PR is opened then).
+        if [ "${DRY_RUN:-false}" = "true" ]; then
+          echo "isready: dry-run — skipping pull-request preflight"
+          exit 0
+        fi
+        # No token → we cannot introspect anything (expected under `act`). The PR
+        # step already tolerates this and exits green, so the preflight must too.
+        if [ -z "${GH_TOKEN:-}" ]; then
+          echo "::warning::skipping pull-request preflight — no GitHub token (expected under \`act\` locally). On GitHub Actions github.token is always set."
+          exit 0
+        fi
+        # Gate 1 — DEMOTED (non-fatal). We deliberately do NOT probe
+        # `gh api repos/$GH_REPO --jq '.permissions.push'`: for the GITHUB_TOKEN (a
+        # GitHub App installation token) that field is a legacy repository-ROLE
+        # boolean, not the token's fine-grained `contents: write` scope — it reads
+        # `false` even on a correctly-configured job that DOES have contents: write.
+        # Documented false positive: a real run on massimodeluisa/de-luisa-bio
+        # (2026-07-06) with contents:write + pull-requests:write + id-token:write all
+        # granted still returned push=false, which hard-failed a perfectly good run.
+        # No runtime endpoint exposes an installation token's contents scope (it is
+        # returned only at token-mint time, which needs the app JWT), so real push
+        # access is proven the robust way — by attempting it at the "Open pull
+        # request" step (attempt-and-interpret, like peter-evans/create-pull-request),
+        # which surfaces the precise 403 with an actionable message.
+        # Gate 2 — the repo setting "Allow GitHub Actions to create and approve pull
+        # requests". Reading it needs administration:read, which the default
+        # GITHUB_TOKEN cannot be granted — so this usually 403s and we proceed (the
+        # PR step then surfaces the precise error). When it IS readable (self-hosted
+        # or an admin token), a false value is authoritative: github.token is blocked
+        # from creating the PR regardless of the workflow's permissions block.
+        CAN_PR=$(gh api "repos/$GH_REPO/actions/permissions/workflow" --jq '.can_approve_pull_request_reviews' 2>/dev/null || echo "unknown")
+        if [ "$CAN_PR" = "false" ]; then
+          echo "::error title=isready.ai cannot open a pull request::This repository blocks GitHub Actions from creating pull requests.%0AEnable Settings -> Actions -> General -> Workflow permissions -> 'Allow GitHub Actions to create and approve pull requests' (an org owner may need to allow it org-wide first), then re-run."
+          exit 1
+        fi
+        echo "isready: pull-request preflight ok — contents:write present and PR creation not blocked"
+
+    - name: Scan
+      shell: bash
+      env:
+        SCAN_URL: ${{ inputs.url }}
+        REPORT_PATH: ${{ runner.temp }}/report.json
+      run: |
+        set -euo pipefail
+        node "$GITHUB_ACTION_PATH/dist/scan.js" "$SCAN_URL" --deep --json > "$REPORT_PATH" || true
+        if ! grep -q '"overall"' "$REPORT_PATH"; then
+          echo "::error::isreadyai scan failed — site unreachable?"
+          exit 1
+        fi
+
+    - name: Upload CI report
+      # Send the scan to isready.ai so the CI Reports dashboard + repo badge
+      # populate for fix-only users, exactly like the audit action — same
+      # apps/cli/src/ci-upload.ts, a single source with no duplicated logic. Runs
+      # after the scan and BEFORE the metered solve, so the report lands regardless
+      # of the fix outcome. `|| true` keeps it best-effort: a transient upload
+      # problem must never block the pull request (a genuinely bad api-key still
+      # fails loudly at the Solve step, which mints a token with the same key).
+      # Needs `permissions: id-token: write`; when it is missing ci-upload.ts prints
+      # a visible warning and skips (also flagged early by the preflight above).
+      if: inputs.api-key != ''
+      shell: bash
+      env:
+        ISREADYAI_API_KEY: ${{ inputs.api-key }}
+        ISREADYAI_API_URL: ${{ inputs.api-url }}
+        REPORT_PATH: ${{ runner.temp }}/report.json
+        GH_REPOSITORY_ID: ${{ github.repository_id }}
+        GH_REPOSITORY: ${{ github.repository }}
+        GH_REF_NAME: ${{ github.ref_name }}
+        GH_SHA: ${{ github.sha }}
+      run: node "$GITHUB_ACTION_PATH/dist/ci-upload.js" || true
+
+    - name: Solve (AI agent in-runner)
+      id: solve
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        ISREADYAI_API_KEY: ${{ inputs.api-key }}
+        ISREADYAI_API_URL: ${{ inputs.api-url }}
+        REPORT_PATH: ${{ runner.temp }}/report.json
+        FIX_DIR: ${{ runner.temp }}/isready-fix
+        TOKEN_FILE: ${{ runner.temp }}/solve-token.json
+        SOLVE_SCRIPT: ${{ github.action_path }}/dist/solve.js
+      run: |
+        set -euo pipefail
+        # Mint a short-lived, inference-scoped token. The real gateway key stays on isready.ai; the agent below only ever sees this ephemeral token.
+        HTTP=$(curl -s -o "$TOKEN_FILE" -w "%{http_code}" -X POST "$ISREADYAI_API_URL/api/solve-token" \
+          -H "authorization: Bearer $ISREADYAI_API_KEY" \
+          -H "content-type: application/json" \
+          -d "{\"repo\":\"${GITHUB_REPOSITORY:-unknown}\"}")
+        if [ "$HTTP" = "403" ]; then
+          echo "::error::the fix agent requires a Pro or Team plan"
+          exit 1
+        fi
+        if [ "$HTTP" != "200" ]; then
+          echo "::error::could not mint solve token (HTTP $HTTP)"
+          exit 1
+        fi
+        SOLVE_TOKEN=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.env.TOKEN_FILE,'utf8')).token)")
+        SOLVE_BASE_URL=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.env.TOKEN_FILE,'utf8')).baseUrl)")
+        echo "::add-mask::$SOLVE_TOKEN"
+        rm -f "$TOKEN_FILE"
+        SOLVE_TOKEN="$SOLVE_TOKEN" SOLVE_BASE_URL="$SOLVE_BASE_URL" \
+          REPORT_PATH="$REPORT_PATH" FIX_DIR="$FIX_DIR" \
+          node "$SOLVE_SCRIPT"
+
+    - name: AI fix plan (job summary + PR body)
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        ISREADYAI_API_KEY: ${{ inputs.api-key }}
+        ISREADYAI_API_URL: ${{ inputs.api-url }}
+        REPORT_PATH: ${{ runner.temp }}/report.json
+        FIX_DIR: ${{ runner.temp }}/isready-fix
+        PLAN_SCRIPT: ${{ github.action_path }}/dist/plan.js
+      run: node "$PLAN_SCRIPT" || true
+
+    - name: Open pull request
+      id: pr
+      if: steps.solve.outputs.patches != '0' && inputs.dry-run != 'true'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        BRANCH: ${{ inputs.branch }}
+        FIX_DIR: ${{ runner.temp }}/isready-fix
+        GH_TOKEN: ${{ github.token }}
+        ISREADYAI_API_KEY: ${{ inputs.api-key }}
+        ISREADYAI_API_URL: ${{ inputs.api-url }}
+        PATCHES: ${{ steps.solve.outputs.patches }}
+      run: |
+        set -euo pipefail
+        # No GitHub token → we can't push or open a PR. On GitHub this is always
+        # set (github.token); it's empty when running under `act` locally. Rather
+        # than let `git push`/`gh` fail the step under `set -e` (red job for a
+        # perfectly good fix run), surface an actionable warning, record the
+        # prepared fix in the job summary, and exit green. Real-GitHub behavior is
+        # unchanged: with a token present this guard is skipped entirely.
+        if [ -z "${GH_TOKEN:-}" ]; then
+          echo "::warning::isready.ai produced ${PATCHES:-?} change(s) but no GitHub token is available, so no pull request was opened. This is expected when running under \`act\` locally. On GitHub Actions this uses github.token automatically; to open the PR elsewhere, pass GH_TOKEN with 'contents: write' and 'pull-requests: write' permissions."
+          {
+            echo "## isready.ai — changes ready, pull request not opened"
+            echo ""
+            echo "Produced **${PATCHES:-?}** change(s), but no GitHub token was available so the pull request was not opened (normal when running locally under \`act\`). The edits are applied in the workspace; re-run on GitHub Actions to open the PR automatically."
+            if [ -s "$FIX_DIR/pr-body.md" ]; then
+              echo ""
+              echo "<details><summary>Prepared pull-request body</summary>"
+              echo ""
+              cat "$FIX_DIR/pr-body.md"
+              echo ""
+              echo "</details>"
+            fi
+          } >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+          exit 0
+        fi
+        git config user.name "isready-bot"
+        git config user.email "bot@isready.ai"
+        # Disable repo-supplied git hooks on every git command below (core.hooksPath=/dev/null
+        # + --no-verify on commit/push): GH_TOKEN is in this step's env and the source the agent
+        # read is untrusted, so no post-checkout/pre-commit/commit-msg/pre-push hook may run with
+        # the token available. GH_TOKEN stays — it's needed only by the push and the gh pr calls.
+        git -c core.hooksPath=/dev/null checkout -B "$BRANCH"
+        # Stage ONLY the files the agent reported changing (NUL-delimited list it wrote), never `git add -A`. The repo source the agent read is untrusted, so a stray write outside this set must never be staged, committed or pushed — the push runs git hooks with GH_TOKEN in env.
+        if [ ! -s "$FIX_DIR/changed.list" ]; then
+          echo "::error::no changed-file manifest from the fix agent"
+          exit 1
+        fi
+        # --literal-pathspecs: treat every list entry as a literal path, so a file
+        # named like git pathspec magic (e.g. ':(glob)**') can't widen the add set.
+        git --literal-pathspecs add --pathspec-from-file="$FIX_DIR/changed.list" --pathspec-file-nul
+        git -c core.hooksPath=/dev/null commit --no-verify -m "fix: improve AI readiness (isready.ai)"
+        git -c core.hooksPath=/dev/null push --no-verify -u origin "$BRANCH" --force-with-lease
+        PR_URL=$(gh pr create \
+          --title "Improve AI readiness — isready.ai fixes" \
+          --body-file "$FIX_DIR/pr-body.md" \
+          --head "$BRANCH" \
+          2>/dev/null || gh pr view "$BRANCH" --json url --jq .url)
+        echo "pr-url=$PR_URL" >> "$GITHUB_OUTPUT"
+        echo "Opened $PR_URL"
+        # Best-effort: tell isready.ai a PR was opened so it can email the account owner. Never fail the run if the notification call fails.
+        if [ -n "${ISREADYAI_API_KEY:-}" ] && [ -n "$PR_URL" ]; then
+          curl -fsS -m 15 -X POST "$ISREADYAI_API_URL/api/fix-notify" \
+            -H "authorization: Bearer $ISREADYAI_API_KEY" \
+            -H "content-type: application/json" \
+            -d "$(printf '{"repo":"%s","prUrl":"%s","patches":%s}' "$GITHUB_REPOSITORY" "$PR_URL" "${PATCHES:-0}")" \
+            >/dev/null 2>&1 || true
+        fi

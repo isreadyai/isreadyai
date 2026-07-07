@@ -1,0 +1,160 @@
+name: Release automation
+
+# When a semver release (vX.Y.Z) is published on this repo — by the monorepo sync
+# workflow or manually — two things happen:
+#
+#   1. promote-changelog: the CHANGELOG "Unreleased" section is moved under a
+#      dated "## vX.Y.Z — <date>" heading and pushed back to the default branch.
+#      This commit only touches CHANGELOG.md, so the built-in GITHUB_TOKEN is
+#      allowed to push it.
+#
+#   2. move-major-tag: the moving major (vX) and minor (vX.Y) tags are re-pointed
+#      at the released commit via the Git refs API, so consumers who pin `@v1`
+#      always resolve to the latest v1.x.y. This is the same convention
+#      actions/checkout and peter-evans/create-pull-request follow.
+#
+# NOTE: the built-in GITHUB_TOKEN is a GitHub App token and CANNOT create or
+# update a tag ref whose target contains `.github/workflows/` files — that needs
+# the `workflows` permission, which is not grantable to GITHUB_TOKEN. Provide a
+# PAT (classic `repo` + `workflow`, or fine-grained `contents:write` +
+# `workflows:write`) as the `TAG_MOVE_TOKEN` secret and this workflow prefers it
+# automatically; otherwise the tag-move step fails with a summary explaining the
+# fallback.
+#
+# Marketplace publishing itself is the "Publish this Action to the GitHub
+# Marketplace" checkbox on the GitHub Release UI (owner-driven; requires 2FA and
+# the accepted Marketplace Developer Agreement) — it is not automatable here.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # push the CHANGELOG promotion commit and move the major/minor tags
+
+jobs:
+  promote-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Promote CHANGELOG Unreleased section to the released version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          # Only stable semver release tags (vMAJOR.MINOR.PATCH).
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "not a stable semver tag: $TAG — skipping changelog promotion"
+            exit 0
+          fi
+          if [ ! -f CHANGELOG.md ]; then
+            echo "no CHANGELOG.md — nothing to promote"
+            exit 0
+          fi
+          # Idempotent: bail out if this version is already recorded.
+          if grep -qF "## $TAG " CHANGELOG.md; then
+            echo "CHANGELOG already lists $TAG — nothing to promote"
+            exit 0
+          fi
+          release_date="$(date -u +%Y-%m-%d)"
+          # Keep "## Unreleased" empty and open a dated section right after it;
+          # everything that was under Unreleased moves into the dated section.
+          awk -v tag="$TAG" -v date="$release_date" '
+            /^## [Uu]nreleased[[:space:]]*$/ && moved == 0 {
+              print "## Unreleased"
+              print ""
+              print "## " tag " — " date
+              moved = 1
+              inblock = 1
+              next
+            }
+            inblock == 1 && /^## / { inblock = 0 }
+            { print }
+          ' CHANGELOG.md > CHANGELOG.md.tmp
+          mv CHANGELOG.md.tmp CHANGELOG.md
+          if git diff --quiet -- CHANGELOG.md; then
+            echo "no CHANGELOG changes to commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs(changelog): record $TAG"
+          git push origin "HEAD:$DEFAULT_BRANCH"
+
+  move-major-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-point major and minor tags via the Git refs API
+        env:
+          GH_TOKEN: ${{ secrets.TAG_MOVE_TOKEN || github.token }}
+          USING_PAT: ${{ secrets.TAG_MOVE_TOKEN != '' }}
+          TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Only stable semver release tags (vMAJOR.MINOR.PATCH). Prereleases like
+          # v1.2.0-rc.1 and anything else are ignored — never move a stable major
+          # tag onto a prerelease.
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "not a stable semver tag: $TAG — skipping major-tag move"
+            exit 0
+          fi
+          major="${TAG%%.*}" # v1
+          minor="${TAG%.*}"  # v1.4
+
+          # Resolve the commit the released tag points at (peel annotated tags).
+          object_type="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.type')"
+          object_sha="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.sha')"
+          if [ "$object_type" = "tag" ]; then
+            object_sha="$(gh api "repos/$REPO/git/tags/$object_sha" --jq '.object.sha')"
+          fi
+          echo "moving $major and $minor -> $object_sha ($TAG)"
+
+          move_tag() {
+            name="$1"
+            if gh api "repos/$REPO/git/ref/tags/$name" >/dev/null 2>&1; then
+              gh api -X PATCH "repos/$REPO/git/refs/tags/$name" \
+                -f sha="$object_sha" -F force=true >/dev/null
+            else
+              gh api -X POST "repos/$REPO/git/refs" \
+                -f ref="refs/tags/$name" -f sha="$object_sha" >/dev/null
+            fi
+          }
+
+          rc=0
+          for name in "$major" "$minor"; do
+            if move_tag "$name"; then
+              echo "moved $name -> $object_sha"
+            else
+              rc=1
+              echo "::error::failed to move $name -> $object_sha"
+            fi
+          done
+
+          if [ "$rc" -ne 0 ]; then
+            {
+              echo "### Moving \`$major\` / \`$minor\` tags failed"
+              echo
+              echo "GitHub refused to update the tag ref(s). The built-in"
+              echo "\`GITHUB_TOKEN\` is a GitHub App token and cannot create or update a"
+              echo "tag whose target contains \`.github/workflows/\` files without the"
+              echo "\`workflows\` permission — which is not grantable to \`GITHUB_TOKEN\`."
+              echo
+              echo "**Fix:** add a PAT (classic with \`repo\` + \`workflow\`, or fine-grained"
+              echo "with \`contents:write\` + \`workflows:write\`) as the \`TAG_MOVE_TOKEN\`"
+              echo "secret; this workflow prefers it automatically when present."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if [ "$USING_PAT" = "true" ]; then
+            echo "tags moved using TAG_MOVE_TOKEN"
+          else
+            echo "tags moved using GITHUB_TOKEN"
+          fi

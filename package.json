@@ -42,7 +42,7 @@
     "exits": "^2.0.1",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.72.0",
-    "turbo": "^2.10.2",
+    "turbo": "^2.10.3",
     "typescript": "~6.0.3"
   },
   "overrides": {
