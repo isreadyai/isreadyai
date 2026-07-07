@@ -53,7 +53,10 @@ const AUDIT_LINES: readonly TCodeLine[] = [
     { text: '      url:', tone: ECodeTone.KEY },
     { text: ' ${{ env.DEPLOY_URL }}' },
     { text: ' ' },
-    { text: '# define DEPLOY_URL yourself, e.g. env: DEPLOY_URL: https://yoursite.com', tone: ECodeTone.COMMENT },
+    {
+      text: '# define DEPLOY_URL yourself, e.g. env: DEPLOY_URL: https://yoursite.com',
+      tone: ECodeTone.COMMENT,
+    },
   ],
   [
     { text: '      threshold:', tone: ECodeTone.KEY },
@@ -95,7 +98,10 @@ const FIX_LINES: readonly TCodeLine[] = [
     { text: '      url:', tone: ECodeTone.KEY },
     { text: ' ${{ env.DEPLOY_URL }}' },
     { text: ' ' },
-    { text: '# define DEPLOY_URL yourself, e.g. env: DEPLOY_URL: https://yoursite.com', tone: ECodeTone.COMMENT },
+    {
+      text: '# define DEPLOY_URL yourself, e.g. env: DEPLOY_URL: https://yoursite.com',
+      tone: ECodeTone.COMMENT,
+    },
   ],
   [
     { text: '      api-key:', tone: ECodeTone.KEY },
