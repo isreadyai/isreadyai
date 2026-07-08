@@ -6,9 +6,10 @@ import { checkCategoryFaqHref } from '@/lib/check-category-docs'
 // MARK: - Category bar
 
 // Wider label column than a bar would need so long names ("Smart Agent
-// Readability") render in full; the shorter bar is intentional.
+// Readability") render in full; the shorter bar is intentional. The @md variants
+// query the bars' wrapper, which must declare @container.
 const ROW_GRID =
-  'grid grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-x-3 gap-y-2 text-sm sm:grid-cols-[12rem_1fr_2.5rem]'
+  'grid grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-x-3 gap-y-2 text-sm @md:grid-cols-[12rem_1fr_2.5rem]'
 // `relative z-10` keeps these labels clickable when the whole card is itself a
 // link overlay (website detail), without nesting one <a> inside another.
 const LABEL_LINK =
@@ -33,7 +34,7 @@ export function CategoryBar({
         {category.label}
       </a>
       <ScoreTrack score={category.score} label={category.label} pending={pending} />
-      <span className="col-start-2 row-start-1 text-right font-mono text-xs sm:col-start-3">
+      <span className="col-start-2 row-start-1 text-right font-mono text-xs @md:col-start-3">
         {pending ? '' : category.score}
       </span>
     </div>
@@ -127,7 +128,7 @@ function ExtraScoreRow({
         {label}
       </a>
       <ScoreTrack score={score} label={label} pending={pending} />
-      <span className="col-start-2 row-start-1 text-right font-mono text-xs sm:col-start-3">
+      <span className="col-start-2 row-start-1 text-right font-mono text-xs @md:col-start-3">
         {pending ? '' : score}
       </span>
     </div>
@@ -146,7 +147,7 @@ function ScoreTrack({
   const width = pending ? 0 : score
   return (
     <div
-      className="bg-site-raised col-span-2 row-start-2 h-2 overflow-hidden rounded-full sm:col-span-1 sm:col-start-2 sm:row-start-1"
+      className="bg-site-raised col-span-2 row-start-2 h-2 overflow-hidden rounded-full @md:col-span-1 @md:col-start-2 @md:row-start-1"
       // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- custom-styled progress bar with fill div child; native <progress> cannot contain styled children
       role="progressbar"
       aria-valuenow={width}

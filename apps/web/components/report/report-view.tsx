@@ -373,7 +373,7 @@ export function ReportView({
           className="border-site-border bg-site-surface/50 mt-8 grid items-center gap-8 rounded-2xl border p-5 sm:grid-cols-[auto_1fr] sm:p-8"
         >
           <ScoreRing score={0} grade={skeletonGrade} label={t('scoring')} loading={true} />
-          <div className="space-y-3">
+          <div className="@container space-y-3">
             <AiSearchBar score={0} pending={true} />
             <SmartAgentBar score={0} pending={true} />
             <div className="space-y-1.5 pt-1">
@@ -620,7 +620,7 @@ export function ReportView({
           label={scoringPending ? t('scoring') : t(`grade.${grade}`)}
           loading={scoringPending}
         />
-        <div className="space-y-3">
+        <div className="@container space-y-3">
           <AiSearchBar
             score={aiSearchScore({ base: report.overall, deep: deepScore })}
             pending={scoringPending}
