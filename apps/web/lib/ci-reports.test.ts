@@ -29,12 +29,21 @@ interface ICiReportRow {
   score: number
   grade: string
   created_at: string
+  scan_id?: string
+}
+
+interface IScanStubRow {
+  id: string
+  report: unknown
+  has_deep: boolean
+  has_smart: boolean
 }
 
 interface IStub {
   apiKeys: IApiKeyRow[]
   ciRepos: ICiRepoRow[]
   ciReports: ICiReportRow[]
+  scans?: IScanStubRow[]
 }
 let stub: IStub
 
@@ -59,6 +68,10 @@ function resolveList(table: string, state: IBuilderState): unknown[] {
       return stub.ciReports
         .filter((r) => r.repo_id === state.eqs.repo_id)
         .toSorted((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+    case 'scans': {
+      const ids = state.ins.id ?? []
+      return (stub.scans ?? []).filter((s) => ids.includes(s.id))
+    }
     default:
       return []
   }
@@ -210,6 +223,55 @@ describe('ciReposForWorkspace', () => {
     const result = await ciReposForWorkspace('ws-1')
 
     expect(result).toHaveLength(0)
+  })
+
+  test('enriches the latest report with the linked scan summary', async () => {
+    stub = {
+      apiKeys: [{ id: 'key-a', workspace_id: 'ws-1', revoked_at: null }],
+      ciRepos: [{ id: 'repo-1', slug: 'gh_aaa', owner_repo: 'acme/one', api_key_id: 'key-a' }],
+      ciReports: [
+        {
+          repo_id: 'repo-1',
+          branch: 'main',
+          commit_sha: 'abc1234',
+          score: 76,
+          grade: 'good',
+          created_at: '2026-07-07T00:00:00.000Z',
+          scan_id: 'scan-1',
+        },
+      ],
+      scans: [
+        {
+          id: 'scan-1',
+          report: {
+            url: 'https://acme.dev',
+            finalUrl: 'https://acme.dev',
+            scoreVersion: '1',
+            overall: 76,
+            grade: 'good',
+            categories: [],
+            startedAt: '2026-07-07T00:00:00.000Z',
+            finishedAt: '2026-07-07T00:00:01.000Z',
+            checks: [
+              { id: 'a', status: 'fail' },
+              { id: 'b', status: 'warn' },
+              { id: 'c', status: 'warn' },
+              { id: 'd', status: 'pass' },
+            ],
+            meta: { durationMs: 10, fetchOk: true },
+          },
+          has_deep: true,
+          has_smart: false,
+        },
+      ],
+    }
+
+    const result = await ciReposForWorkspace('ws-1')
+
+    expect(result[0]?.latestReport?.failed).toBe(1)
+    expect(result[0]?.latestReport?.warned).toBe(2)
+    expect(result[0]?.latestReport?.isDeep).toBe(true)
+    expect(result[0]?.latestReport?.isSmart).toBe(false)
   })
 
   test('returns a null latestReport for a repo registered but never reported', async () => {

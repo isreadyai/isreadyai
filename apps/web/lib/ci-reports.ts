@@ -1,7 +1,7 @@
 import type { Json } from '@isreadyai/supabase'
 import type { IScanReport, ISiteReport, TGrade } from '@isreadyai/scanner'
 import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
-import { gradeOf, isGrade, isSiteReport } from '@isreadyai/scanner'
+import { gradeOf, isGrade, isScanReport, isSiteReport } from '@isreadyai/scanner'
 import { requireSuccess } from '@/lib/db'
 import { combinedScoreFromRow, scanSummaryColumns } from '@/lib/score'
 import { isPaidPlan, planOrFree } from '@/lib/plans'
@@ -329,6 +329,10 @@ export interface ICiWorkspaceReport {
   score: number | null
   grade: TGrade | null
   createdAt: string
+  failed: number
+  warned: number
+  isDeep: boolean
+  isSmart: boolean
 }
 
 export interface ICiWorkspaceRepo {
@@ -373,31 +377,64 @@ export async function ciReposForWorkspace(workspaceId: string): Promise<ICiWorks
     return []
   }
 
-  return Promise.all(
-    rows.map(async (repo): Promise<ICiWorkspaceRepo> => {
+  const latests = await Promise.all(
+    rows.map(async (repo) => {
       const { data: latest } = await client
         .from('ci_reports')
-        .select('branch, commit_sha, score, grade, created_at')
+        .select('branch, commit_sha, score, grade, created_at, scan_id')
         .eq('repo_id', repo.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      return {
-        slug: repo.slug,
-        ownerRepo: repo.owner_repo,
-        latestReport:
-          latest === null
-            ? null
-            : {
-                branch: latest.branch,
-                commit: latest.commit_sha,
-                score: latest.score,
-                grade: isGrade(latest.grade) ? latest.grade : null,
-                createdAt: latest.created_at,
-              },
-      }
+      return { repo, latest }
     }),
   )
+
+  const scanIds = latests
+    .map(({ latest }) => latest?.scan_id)
+    .filter((id): id is string => typeof id === 'string')
+  const summaries = new Map<
+    string,
+    { failed: number; warned: number; isDeep: boolean; isSmart: boolean }
+  >()
+  if (scanIds.length > 0) {
+    const { data: scans } = await client
+      .from('scans')
+      .select('id, report, has_deep, has_smart')
+      .in('id', scanIds)
+    for (const scan of scans ?? []) {
+      const report = isScanReport(scan.report) ? scan.report : null
+      summaries.set(scan.id, {
+        failed: report?.checks.filter((check) => check.status === 'fail').length ?? 0,
+        warned: report?.checks.filter((check) => check.status === 'warn').length ?? 0,
+        isDeep: scan.has_deep,
+        isSmart: scan.has_smart,
+      })
+    }
+  }
+
+  return latests.map(({ repo, latest }) => {
+    const summary =
+      typeof latest?.scan_id === 'string' ? (summaries.get(latest.scan_id) ?? null) : null
+    return {
+      slug: repo.slug,
+      ownerRepo: repo.owner_repo,
+      latestReport:
+        latest === null
+          ? null
+          : {
+              branch: latest.branch,
+              commit: latest.commit_sha,
+              score: latest.score,
+              grade: isGrade(latest.grade) ? latest.grade : null,
+              createdAt: latest.created_at,
+              failed: summary?.failed ?? 0,
+              warned: summary?.warned ?? 0,
+              isDeep: summary?.isDeep ?? false,
+              isSmart: summary?.isSmart ?? false,
+            },
+    }
+  })
 }
 
 /** Resolves the scan id for a slug+commit so the report page can render it. */
