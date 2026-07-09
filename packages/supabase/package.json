@@ -1,6 +1,6 @@
 {
   "name": "@isreadyai/supabase",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "private": true,
   "description": "Typed Supabase client, generated database types, and local Supabase infrastructure for isready.ai.",
   "license": "LicenseRef-PolyForm-Shield-1.0.0",
