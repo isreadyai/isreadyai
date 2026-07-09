@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Web app (`apps/web`)
+
+- **Product Hunt launch badge on the landing page**: pinned bottom-right, fades out over the first ~320px of scroll so it clears the corner before the scroll-to-top button appears; hidden below `sm`.
+
 ## [1.0.4] - 2026-07-09
 
 ### Fixed
@@ -213,7 +219,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Turborepo pipeline with Bun as runtime and package manager.
 - CI: lint (`oxlint`), format check (`oxfmt`), type-check, tests, and build.
 
-[Unreleased]: https://github.com/isreadyai/isreadyai/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/isreadyai/isreadyai/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/isreadyai/isreadyai/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/isreadyai/isreadyai/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/isreadyai/isreadyai/compare/v0.2.1...v1.0.2
 [0.2.1]: https://github.com/isreadyai/isreadyai/compare/v0.2.0...v0.2.1

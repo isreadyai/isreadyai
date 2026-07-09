@@ -8,6 +8,7 @@ import { FaqItem } from '@/components/faq-item'
 import { GithubShowcase } from '@/components/github-showcase'
 import { SmartAgentShowcase } from '@/components/smart-agent-showcase'
 import { PremiumTiers } from '@/components/premium-tiers'
+import { ProductHuntBadge } from '@/components/product-hunt-badge'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { HeroCopy } from '@/components/hero-copy'
@@ -105,6 +106,7 @@ export default async function HomePage({
   return (
     <>
       <JsonLd faq={structuredFaqEntries} />
+      <ProductHuntBadge className="fixed right-8 bottom-8 z-40" />
       <SiteHeader />
       <main>
         <section id="home" className="relative overflow-hidden">
