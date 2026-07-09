@@ -6,11 +6,14 @@ import {
   scan,
   scanSite,
   allChecks,
+  gradeOf,
   hostOf,
+  readinessHeadlineScore,
   reportToMarkdown,
   validateScanInput,
 } from '@isreadyai/scanner'
 import { runSmartAgentAudit, aggregateSmartReports } from '@isreadyai/scanner'
+import packageJson from '../package.json' with { type: 'json' }
 import {
   renderReport,
   renderSiteReport,
@@ -31,7 +34,7 @@ import * as c from './ansi.ts'
 
 // MARK: - Constants
 
-const VERSION = '0.1.0'
+const VERSION = packageJson.version
 const PASS_THRESHOLD = 50
 
 // MARK: - Types
@@ -117,9 +120,9 @@ async function main(): Promise<void> {
       process.exit(1)
     }
 
-    const overall = site !== null ? site.overall : report.overall
-    const grade = site !== null ? site.grade : report.grade
-    const baseLabel = `Agent Readability ${overall}/100 — ${grade.toUpperCase()}`
+    const searchOverall = site !== null ? site.overall : report.overall
+    const searchGrade = site !== null ? site.grade : report.grade
+    const baseLabel = `Agent Readability ${searchOverall}/100 — ${searchGrade.toUpperCase()}`
 
     const renderHuman = !flags.json && !flags.md && !flags.llm && !flags.quiet
     // In the clack frame the report carries the │ gutter; plain output stays bare.
@@ -168,6 +171,37 @@ async function main(): Promise<void> {
         : 'Smart Agent Readability unavailable'
     }
 
+    const smartTrack = (): ISmartAgentReport | ISmartAgentSiteReport | null =>
+      smartSite ?? smartReport
+
+    const headlineOverall = (): number =>
+      readinessHeadlineScore({
+        base: report.overall,
+        deep: site?.overall ?? null,
+        smart: smartTrack()?.overall ?? null,
+      })
+
+    const headlineGrade = (): TGrade => gradeOf(headlineOverall())
+
+    const readinessSummary = (): string => {
+      const score = headlineOverall()
+      const grade = headlineGrade()
+      const paint = scoreColor(score)
+      return `${c.accent('◆')} ${c.bold('AI Readiness')} ${paint(c.bold(`${score}/100`))} ${c.dim('—')} ${paint(grade.toUpperCase())}`
+    }
+
+    const readinessJson = (): {
+      overall: number
+      grade: TGrade
+      aiSearch: number
+      smartAgent: number | null
+    } => ({
+      overall: headlineOverall(),
+      grade: headlineGrade(),
+      aiSearch: searchOverall,
+      smartAgent: smartTrack()?.overall ?? null,
+    })
+
     const smartSection = (): string =>
       smartSite !== null
         ? renderSmartAgentSiteReport(smartSite)
@@ -187,6 +221,9 @@ async function main(): Promise<void> {
         await runSmartAudit()
         spinner.stop(smartLabel())
         emit(smartSection())
+        if (smartTrack() !== null) {
+          emit(readinessSummary())
+        }
       }
       if (fancy) {
         clack.outro(c.dim('full report & monitoring → https://isready.ai'))
@@ -204,6 +241,7 @@ async function main(): Promise<void> {
           `${JSON.stringify(
             {
               ...(site ?? report),
+              readiness: readinessJson(),
               ...(flags.smart
                 ? { smartAgent: smartSite ?? smartReport, smartAgentError: smartError }
                 : {}),
@@ -223,19 +261,19 @@ async function main(): Promise<void> {
         )
       } else if (flags.quiet) {
         process.stdout.write(
-          `${quietLine(overall, site !== null ? site.grade : report.grade)}${smartQuiet(smartReport, smartError)}\n`,
+          `${quietLine(headlineOverall(), headlineGrade())}${smartQuiet(smartTrack(), smartError)}\n`,
         )
       }
     }
 
     await sendTelemetry({
       host: hostOf(report.finalUrl),
-      score: overall,
+      score: headlineOverall(),
       deep: flags.deep,
       smart: smartSite !== null || smartReport !== null,
     })
 
-    process.exit(overall >= PASS_THRESHOLD ? 0 : 1)
+    process.exit(headlineOverall() >= PASS_THRESHOLD ? 0 : 1)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     spinner.fail(`scan failed — ${message}`)
@@ -388,7 +426,10 @@ function quietLine(overall: number, grade: TGrade): string {
  * @param {(string | null)} error - Error message if Smart Agent failed, or null if successful.
  * @returns {string} - Formatted Smart Agent suffix for quiet mode (empty string if N/A).
  */
-function smartQuiet(report: ISmartAgentReport | null, error: string | null): string {
+function smartQuiet(
+  report: ISmartAgentReport | ISmartAgentSiteReport | null,
+  error: string | null,
+): string {
   if (report !== null) {
     const paint = scoreColor(report.overall)
     return ` ${c.dim('· Smart')} ${paint(c.bold(String(report.overall)))}${c.dim('/100')}`
@@ -586,7 +627,7 @@ function helpText(): string {
     `  isreadyai <url> [options]`,
     '',
     `${b('OPTIONS')}`,
-    `  --json        Print the raw IScanReport as JSON (no decoration)`,
+    `  --json        Print the raw report JSON plus readiness summary (no decoration)`,
     `  --md          Print the report as human-readable Markdown`,
     `  --llm         Print an AI-agent fix plan (paste into Claude Code/Cursor)`,
     `  --quiet, -q   Print only the final score line`,
@@ -599,7 +640,7 @@ function helpText(): string {
     '',
     `${b('EXAMPLES')}`,
     `  ${c.dim('$')} isreadyai example.com`,
-    `  ${c.dim('$')} isreadyai https://example.com --json | jq .overall`,
+    `  ${c.dim('$')} isreadyai https://example.com --json | jq .readiness.overall`,
     `  ${c.dim('$')} isreadyai example.com --quiet`,
     `  ${c.dim('$')} isreadyai example.com --smart-ai`,
     '',

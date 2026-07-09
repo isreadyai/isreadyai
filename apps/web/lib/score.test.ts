@@ -1,12 +1,25 @@
 import { describe, expect, test } from 'bun:test'
-import { aiSearchScore, combinedScore } from './score'
+import type { ISiteReport } from '@isreadyai/scanner'
+import { aiSearchScore, combinedScore, deepTrackScore } from './score'
 
 describe('aiSearchScore', () => {
   test('uses the single-page base when no deep scan ran', () => {
     expect(aiSearchScore({ base: 92 })).toBe(92)
   })
-  test('uses the site-wide deep mean over base — never both (no double-count)', () => {
+  test('uses the site-wide deep score over base — never both (no double-count)', () => {
     expect(aiSearchScore({ base: 92, deep: 45 })).toBe(45)
+  })
+})
+
+describe('deepTrackScore', () => {
+  test('uses scanSite overall as the canonical deep score', () => {
+    const site = {
+      overall: 80,
+      primary: { overall: 88 },
+      pages: [{ overall: 20 }],
+    } as ISiteReport
+
+    expect(deepTrackScore(site)).toBe(80)
   })
 })
 

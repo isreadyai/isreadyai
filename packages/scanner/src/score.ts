@@ -33,6 +33,32 @@ export const CATEGORY_WEIGHTS: Record<TCategory, number> = {
   [ECategory.GEO_CONTENT]: 0.15,
 }
 
+export interface IReadinessScoreTracks {
+  base: number
+  deep?: number | null
+  smart?: number | null
+}
+
+/**
+ * AI Search track: site-wide deep score when present, otherwise the single-page base.
+ */
+export function aiSearchTrackScore(tracks: IReadinessScoreTracks): number {
+  return typeof tracks.deep === 'number' ? tracks.deep : tracks.base
+}
+
+/**
+ * Headline readiness score. Deep and base are the same AI Search track at
+ * different breadth, so deep wins over base. Smart Agent is a separate track
+ * and is averaged in only when it has actually run.
+ */
+export function readinessHeadlineScore(tracks: IReadinessScoreTracks): number {
+  const search = aiSearchTrackScore(tracks)
+  if (typeof tracks.smart === 'number') {
+    return Math.round((search + tracks.smart) / 2)
+  }
+  return search
+}
+
 /**
  * Computes category scores from check results: weighted average per category.
  *
