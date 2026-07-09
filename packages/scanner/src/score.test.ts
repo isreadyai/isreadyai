@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import { CATEGORY_WEIGHTS, gradeOf, overallScore, scoreCategories } from './score.ts'
+import {
+  CATEGORY_WEIGHTS,
+  aiSearchTrackScore,
+  gradeOf,
+  overallScore,
+  readinessHeadlineScore,
+  scoreCategories,
+} from './score.ts'
 import type { ICategoryScore, ICheckResult, TCategory } from './types.ts'
 import { CATEGORY_LABELS, ECategory, EGrade, EStatus } from './types.ts'
 
@@ -130,6 +137,32 @@ describe('overallScore', () => {
 
   test('zero total weight returns 0 even with non-zero scores', () => {
     expect(overallScore([cat(ECategory.CRAWLER_ACCESS, 100, 0)])).toBe(0)
+  })
+})
+
+// MARK: - readiness headline
+
+describe('aiSearchTrackScore', () => {
+  test('uses the single-page base when no deep scan ran', () => {
+    expect(aiSearchTrackScore({ base: 92 })).toBe(92)
+  })
+
+  test('uses the site-wide deep score over base', () => {
+    expect(aiSearchTrackScore({ base: 92, deep: 45 })).toBe(45)
+  })
+})
+
+describe('readinessHeadlineScore', () => {
+  test('uses AI Search alone when Smart Agent did not run', () => {
+    expect(readinessHeadlineScore({ base: 92, deep: 45 })).toBe(45)
+  })
+
+  test('averages AI Search and Smart Agent when Smart Agent ran', () => {
+    expect(readinessHeadlineScore({ base: 92, deep: 45, smart: 94 })).toBe(70)
+  })
+
+  test('averages base and Smart Agent when no deep scan ran', () => {
+    expect(readinessHeadlineScore({ base: 92, smart: 80 })).toBe(86)
   })
 })
 

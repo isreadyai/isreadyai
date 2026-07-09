@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### CLI (`apps/cli`)
+
+- **CLI and web scores now use the same readiness headline**: the shared scanner scorer is used for the combined AI Search + Smart Agent score, `--quiet` / telemetry / exit status follow that headline when Smart Agent runs, and `--json` now includes a `readiness` summary without changing the raw report shape. The CLI version is read from `apps/cli/package.json` instead of a stale hardcoded constant.
+
+#### Scanner engine (`@isreadyai/scanner`)
+
+- **Readiness headline scoring is shared**: AI Search now resolves to the canonical single-page or deep site score in one package-level helper, and Smart Agent is averaged in only as a separate completed track.
+
+#### Web app (`apps/web`)
+
+- **Deep scan score no longer drifts from the CLI**: report pages, badges, and dashboard summary columns use the scanner's canonical `site.overall` for the AI Search deep track instead of recomputing a browser-only page average.
+
 ## [1.0.3] - 2026-07-09
 
 ### Fixed
@@ -197,7 +211,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Turborepo pipeline with Bun as runtime and package manager.
 - CI: lint (`oxlint`), format check (`oxfmt`), type-check, tests, and build.
 
-[Unreleased]: https://github.com/isreadyai/isreadyai/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/isreadyai/isreadyai/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/isreadyai/isreadyai/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/isreadyai/isreadyai/compare/v0.2.1...v1.0.2
 [0.2.1]: https://github.com/isreadyai/isreadyai/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/isreadyai/isreadyai/compare/v0.1.0...v0.2.0

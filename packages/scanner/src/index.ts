@@ -40,7 +40,16 @@ export {
   type ISiteReport,
   type ISiteFindingGroup,
 } from './crawl.ts'
-export { SCORE_VERSION, CATEGORY_WEIGHTS, scoreCategories, overallScore, gradeOf } from './score.ts'
+export {
+  SCORE_VERSION,
+  CATEGORY_WEIGHTS,
+  scoreCategories,
+  overallScore,
+  gradeOf,
+  aiSearchTrackScore,
+  readinessHeadlineScore,
+  type IReadinessScoreTracks,
+} from './score.ts'
 export * from './crawlers.ts'
 export * from './smart-agent/index.ts'
 export * from './types.ts'

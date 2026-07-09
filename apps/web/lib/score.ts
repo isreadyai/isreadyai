@@ -2,6 +2,8 @@ import type { ISiteReport, ISmartAgentReport, ISmartAgentSiteReport } from '@isr
 import type { Tables } from '@isreadyai/supabase'
 
 import {
+  aiSearchTrackScore,
+  readinessHeadlineScore,
   isScanReport,
   isSiteReport,
   isSmartAgentReport,
@@ -12,7 +14,7 @@ import {
 //
 // Two co-equal tracks measure DIFFERENT things:
 //   • AI Search — will retrieval/citation engines (which read raw HTML, not JS)
-//     crawl, parse and cite the page. Site-wide deep mean when a deep scan ran,
+//     crawl, parse and cite the page. Site-wide deep score when a deep scan ran,
 //     otherwise the single homepage scan.
 //   • AI Agent — what a browser-capable agent perceives after the page renders.
 // The headline is the mean of the two (AI Agent only counts once its pass ran).
@@ -25,9 +27,9 @@ export interface IScoreTracks {
   smart?: number | null
 }
 
-/** AI Search track: the site-wide deep mean when present, else the single-page base. */
+/** AI Search track: the site-wide deep score when present, else the single-page base. */
 export function aiSearchScore(tracks: IScoreTracks): number {
-  return typeof tracks.deep === 'number' ? tracks.deep : tracks.base
+  return aiSearchTrackScore(tracks)
 }
 
 /**
@@ -37,23 +39,15 @@ export function aiSearchScore(tracks: IScoreTracks): number {
  * story.
  */
 export function combinedScore(tracks: IScoreTracks): number {
-  const search = aiSearchScore(tracks)
-  if (typeof tracks.smart === 'number') {
-    return Math.round((search + tracks.smart) / 2)
-  }
-  return search
+  return readinessHeadlineScore(tracks)
 }
 
-/** Deep-scan track: the mean of every crawled page's score (primary included). */
+/** Deep-scan track: the canonical site-wide score emitted by scanSite. */
 export function deepTrackScore(site: ISiteReport | null | undefined): number | null {
   if (site === null || site === undefined) {
     return null
   }
-  const pages = [site.primary, ...site.pages]
-  if (pages.length === 0) {
-    return null
-  }
-  return Math.round(pages.reduce((sum, p) => sum + p.overall, 0) / pages.length)
+  return site.overall
 }
 
 /** AI Agent track: the deep (site-wide) pass when present, else single page. */
