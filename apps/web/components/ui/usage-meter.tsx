@@ -1,5 +1,8 @@
 'use client'
 
+import { dayjs } from '@/lib/dayjs'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
+
 // MARK: - UsageMeter (quota progress bar with threshold colours)
 
 /**
@@ -23,11 +26,10 @@ function fillClassFor(percent: number): string {
   return 'bg-site-accent'
 }
 
-function formatReset(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date)
-}
+const INTEGER_FORMAT = new Intl.NumberFormat('en')
 
 export function UsageMeter({ label, used, limit, unit, periodResetAt = null }: IUsageMeterProps) {
+  const timeZone = useBrowserTimeZone()
   const isUnlimited = limit === Number.POSITIVE_INFINITY
   // limit=0 means the quota does not apply to this plan; we render it as N/A.
   const isNotApplicable = limit === 0
@@ -45,12 +47,12 @@ export function UsageMeter({ label, used, limit, unit, periodResetAt = null }: I
             '—'
           ) : isUnlimited ? (
             <>
-              {clampedUsed.toLocaleString()}
+              {INTEGER_FORMAT.format(clampedUsed)}
               {unitSuffix} · unlimited
             </>
           ) : (
             <>
-              {clampedUsed.toLocaleString()} / {limit.toLocaleString()}
+              {INTEGER_FORMAT.format(clampedUsed)} / {INTEGER_FORMAT.format(limit)}
               {unitSuffix}
             </>
           )}
@@ -77,7 +79,13 @@ export function UsageMeter({ label, used, limit, unit, periodResetAt = null }: I
       </div>
 
       {periodResetAt !== null && (
-        <p className="text-site-faint mt-2 text-xs">Resets {formatReset(periodResetAt)}</p>
+        <p className="text-site-faint mt-2 text-xs">
+          Resets{' '}
+          {dayjs
+            .utc(periodResetAt)
+            .tz(timeZone ?? 'UTC')
+            .format('MMM D')}
+        </p>
       )}
     </div>
   )

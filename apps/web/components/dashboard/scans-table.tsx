@@ -15,6 +15,8 @@ import {
 import { CompactReport } from '@/components/dashboard/compact-report'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TextInput } from '@/components/ui/text-input'
+import { dayjs } from '@/lib/dayjs'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 
 // MARK: - Scans table (filterable, compact report per row)
 
@@ -50,6 +52,7 @@ export function ScansTable({
   const t = useTranslations('dashboard')
   const router = useRouter()
   const [query, setQuery] = useState('')
+  const timeZone = useBrowserTimeZone()
   // Default sort by most recent; the Report column header sorts by score.
   const [sort, setSort] = useState<IDataTableSort>({ key: 'date', dir: ETableSortDir.DESC })
 
@@ -96,7 +99,10 @@ export function ScansTable({
       align: ETableAlign.END,
       render: (row) => (
         <span className="text-site-faint text-xs whitespace-nowrap">
-          {new Date(row.createdAt).toLocaleString()}
+          {dayjs
+            .utc(row.createdAt)
+            .tz(timeZone ?? 'UTC')
+            .format('DD/MM/YYYY, HH:mm:ss')}
         </span>
       ),
     },

@@ -17,6 +17,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { TextInput } from '@/components/ui/text-input'
 import { notify } from '@/components/ui/toast'
 import { addTrackedDomain } from '@/lib/actions/domains'
+import { dayjs } from '@/lib/dayjs'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 
 // MARK: - "My websites" list — a scans-style table of tracked sites
 
@@ -55,6 +57,7 @@ export function TrackedSitesClient({
   const [host, setHost] = useState('')
   const [query, setQuery] = useState('')
   const [pending, startTransition] = useTransition()
+  const timeZone = useBrowserTimeZone()
   const [sort, setSort] = useState<IDataTableSort>({ key: 'date', dir: ETableSortDir.DESC })
 
   function onAdd(): void {
@@ -139,7 +142,12 @@ export function TrackedSitesClient({
       align: ETableAlign.END,
       render: (row) => (
         <span className="text-site-faint text-xs whitespace-nowrap">
-          {row.nextCheckAt !== null ? new Date(row.nextCheckAt).toLocaleDateString() : '—'}
+          {row.nextCheckAt !== null
+            ? dayjs
+                .utc(row.nextCheckAt)
+                .tz(timeZone ?? 'UTC')
+                .format('DD/MM/YYYY')
+            : '—'}
         </span>
       ),
     },

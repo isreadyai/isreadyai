@@ -1,4 +1,4 @@
-import type { Json, Tables, TablesUpdate } from '@isreadyai/supabase'
+import type { Tables, TablesUpdate } from '@isreadyai/supabase'
 import type { IScanRecord, TScanRecordPatch } from '@/lib/scan-record'
 
 import {
@@ -9,6 +9,7 @@ import {
 } from '@isreadyai/scanner'
 import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
 import { EScanStatus, ESmartScanStatus, isScanStatus, isSmartScanStatus } from '@/lib/scan-record'
+import { toJsonb } from '@/lib/jsonb'
 import { scanSummaryColumns } from '@/lib/score'
 
 // MARK: - Scan store
@@ -239,13 +240,13 @@ async function createSupabaseStore(): Promise<IScanStore> {
     async update(id, patch): Promise<void> {
       const update: TablesUpdate<'scans'> = {
         ...(patch.status !== undefined ? { status: patch.status } : {}),
-        ...(patch.report !== undefined ? { report: toJson(patch.report) } : {}),
-        ...(patch.siteReport !== undefined ? { site_report: toJson(patch.siteReport) } : {}),
+        ...(patch.report !== undefined ? { report: toJsonb(patch.report) } : {}),
+        ...(patch.siteReport !== undefined ? { site_report: toJsonb(patch.siteReport) } : {}),
         ...(patch.error !== undefined ? { error: patch.error } : {}),
         ...(patch.smartStatus !== undefined ? { smart_status: patch.smartStatus } : {}),
-        ...(patch.smartReport !== undefined ? { smart_report: toJson(patch.smartReport) } : {}),
+        ...(patch.smartReport !== undefined ? { smart_report: toJsonb(patch.smartReport) } : {}),
         ...(patch.siteSmartReport !== undefined
-          ? { smart_site_report: toJson(patch.siteSmartReport) }
+          ? { smart_site_report: toJsonb(patch.siteSmartReport) }
           : {}),
         ...(patch.smartError !== undefined ? { smart_error: patch.smartError } : {}),
       }
@@ -300,8 +301,4 @@ let resolved: Promise<IScanStore> | null = null
 export function getScanStore(): Promise<IScanStore> {
   resolved ??= isSupabaseConfigured() ? createSupabaseStore() : Promise.resolve(memoryStore)
   return resolved
-}
-
-function toJson(value: object | null): Json {
-  return value as unknown as Json
 }

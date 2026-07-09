@@ -1,8 +1,8 @@
-import type { Json } from '@isreadyai/supabase'
 import type { IScanReport, ISiteReport, TGrade } from '@isreadyai/scanner'
 import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
 import { gradeOf, isGrade, isScanReport, isSiteReport } from '@isreadyai/scanner'
 import { requireSuccess } from '@/lib/db'
+import { toJsonb } from '@/lib/jsonb'
 import { combinedScoreFromRow, scanSummaryColumns } from '@/lib/score'
 import { isPaidPlan, planOrFree } from '@/lib/plans'
 import { SITE_URL } from '@/lib/site'
@@ -142,8 +142,8 @@ export async function persistCiReport(input: ICiUploadInput): Promise<ICiUploadR
 
   // Store the single-page report in `report` and the crawl in `site_report`,
   // matching how the web persists scans — so scoring and the report view work.
-  const reportJson = primary as unknown as Json
-  const siteReportJson = siteReport as unknown as Json | null
+  const reportJson = toJsonb(primary)
+  const siteReportJson = siteReport === null ? null : toJsonb(siteReport)
   const score = combinedScoreFromRow({
     report: reportJson,
     site_report: siteReportJson,

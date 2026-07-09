@@ -1,10 +1,10 @@
 import { allChecks, isScanReport, scan, scanSite } from '@isreadyai/scanner'
 import type { IScanReport } from '@isreadyai/scanner'
-import type { Json } from '@isreadyai/supabase'
 import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
 import { isAuthorizedCron } from '@/lib/cron-auth'
 import { sendScoreDropEmail } from '@/lib/email-monitoring'
 import { resolveEntitlements, type IEntitlements } from '@/lib/entitlements'
+import { toJsonb } from '@/lib/jsonb'
 import { materializeScanSummary } from '@/lib/scan-store'
 import { runWebSmartAgentAudit } from '@/lib/smart-agent/run-smart-agent'
 import { runWebSmartDeepAudit } from '@/lib/smart-agent/run-smart-deep'
@@ -234,15 +234,13 @@ async function persistScheduledScan(
     id: scanId,
     url,
     status: 'done',
-    report: report as unknown as Json,
+    report: toJsonb(report),
     source: 'cron',
     smart_status: smart ? (heavy.smartReport !== null ? 'done' : 'failed') : 'disabled',
-    smart_report:
-      smart && heavy.smartReport !== null ? (heavy.smartReport as unknown as Json) : null,
+    smart_report: smart && heavy.smartReport !== null ? toJsonb(heavy.smartReport) : null,
     smart_error: smart && heavy.smartReport === null ? 'agent_browser_failed' : null,
-    site_report: deep && heavy.siteReport !== null ? (heavy.siteReport as unknown as Json) : null,
-    smart_site_report:
-      deep && smart && heavy.smartSite !== null ? (heavy.smartSite as unknown as Json) : null,
+    site_report: deep && heavy.siteReport !== null ? toJsonb(heavy.siteReport) : null,
+    smart_site_report: deep && smart && heavy.smartSite !== null ? toJsonb(heavy.smartSite) : null,
     user_id: website.created_by,
     workspace_id: website.workspace_id,
     website_id: schedule.website_id,

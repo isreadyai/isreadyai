@@ -8,7 +8,9 @@ import {
   type IDataTableColumn,
 } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
+import { dayjs } from '@/lib/dayjs'
 import { hostOf } from '@/lib/url'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 
 // MARK: - Fix runs table
 
@@ -23,6 +25,7 @@ export interface IFixRunRow {
 /** Renders recent fix runs with repo, patches, and date columns. */
 export function FixRunsTable({ runs }: { runs: IFixRunRow[] }) {
   const t = useTranslations('dashboard')
+  const timeZone = useBrowserTimeZone()
 
   const columns: Array<IDataTableColumn<IFixRunRow>> = [
     {
@@ -49,7 +52,10 @@ export function FixRunsTable({ runs }: { runs: IFixRunRow[] }) {
       align: ETableAlign.END,
       render: (run) => (
         <span className="text-site-faint text-xs whitespace-nowrap">
-          {new Date(run.created_at).toLocaleDateString()}
+          {dayjs
+            .utc(run.created_at)
+            .tz(timeZone ?? 'UTC')
+            .format('DD/MM/YYYY')}
         </span>
       ),
     },

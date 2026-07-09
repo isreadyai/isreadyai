@@ -18,7 +18,9 @@ import { TextInput } from '@/components/ui/text-input'
 import { notify } from '@/components/ui/toast'
 import { createApiKey, renameApiKey, revokeApiKey, rotateApiKey } from '@/lib/actions/api-keys'
 import type { IApiKeyView } from '@/lib/api-key-types'
+import { dayjs } from '@/lib/dayjs'
 import { useCopyToClipboard } from '@/lib/use-copy-to-clipboard'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 
 // MARK: - API keys management island
 
@@ -37,6 +39,7 @@ export function ApiKeysClient({ keys }: IApiKeysClientProps) {
   const [editing, setEditing] = useState<string | null>(null)
   const [editLabel, setEditLabel] = useState('')
   const [pending, startTransition] = useTransition()
+  const timeZone = useBrowserTimeZone()
 
   function onCreate(): void {
     startTransition(async () => {
@@ -124,9 +127,18 @@ export function ApiKeysClient({ keys }: IApiKeysClientProps) {
       render: (key) => (
         <span className="text-site-faint text-xs">
           {key.prefix !== null ? <span className="font-mono">{key.prefix}… · </span> : null}
-          {key.plan} · {new Date(key.createdAt).toLocaleDateString()}
+          {key.plan} ·{' '}
+          {dayjs
+            .utc(key.createdAt)
+            .tz(timeZone ?? 'UTC')
+            .format('DD/MM/YYYY')}
           {key.lastUsedAt !== null
-            ? ` · ${t('keyLastUsed', { date: new Date(key.lastUsedAt).toLocaleDateString() })}`
+            ? ` · ${t('keyLastUsed', {
+                date: dayjs
+                  .utc(key.lastUsedAt)
+                  .tz(timeZone ?? 'UTC')
+                  .format('DD/MM/YYYY'),
+              })}`
             : ` · ${t('keyNeverUsed')}`}
         </span>
       ),

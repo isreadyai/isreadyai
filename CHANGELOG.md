@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### Web app (`apps/web`)
+
+- **Scan reports with binary evidence now persist cleanly**: report JSON is sanitized before every `jsonb` write (`/api/scan`, CI uploads, and monitoring cron), removing null bytes that Postgres rejects. This fixes web scans such as `www.producthunt.com`, whose gzipped sitemap preview made the CLI succeed but the UI fail at report persistence time.
+- **Dashboard/report dates no longer cause hydration mismatches**: date rendering now uses `dayjs` with the viewer's browser timezone after mount while keeping a server/client-stable fallback for hydration. The visible format stays the previous numeric style (`DD/MM/YYYY` and `DD/MM/YYYY, HH:mm:ss`) instead of locale-dependent server/browser output.
+
 ## [1.0.2] - 2026-07-07
 
 ### Changed
@@ -188,5 +195,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Turborepo pipeline with Bun as runtime and package manager.
 - CI: lint (`oxlint`), format check (`oxfmt`), type-check, tests, and build.
 
-[Unreleased]: https://github.com/isreadyai/isreadyai/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/isreadyai/isreadyai/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/isreadyai/isreadyai/compare/v0.2.1...v1.0.2
+[0.2.1]: https://github.com/isreadyai/isreadyai/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/isreadyai/isreadyai/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/isreadyai/isreadyai/releases/tag/v0.1.0

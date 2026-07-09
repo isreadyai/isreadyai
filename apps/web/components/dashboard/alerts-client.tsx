@@ -7,6 +7,8 @@ import { Button, EButtonVariant } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { notify } from '@/components/ui/toast'
 import { markAllNotificationsRead, markNotificationRead } from '@/lib/actions/notifications'
+import { dayjs } from '@/lib/dayjs'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 
 // MARK: - Alerts inbox
 
@@ -30,6 +32,7 @@ const RAIL: Record<string, string> = {
 export function AlertsClient({ notifications }: { notifications: INotification[] }) {
   const t = useTranslations('dashboard')
   const [pending, startTransition] = useTransition()
+  const timeZone = useBrowserTimeZone()
   const hasUnread = notifications.some((n) => n.readAt === null)
 
   function onMarkRead(id: string): void {
@@ -89,7 +92,10 @@ export function AlertsClient({ notifications }: { notifications: INotification[]
                     <p className="text-site-muted mt-0.5 text-xs">{item.body}</p>
                   ) : null}
                   <p className="text-site-faint mt-1 text-[11px]">
-                    {new Date(item.createdAt).toLocaleString()}
+                    {dayjs
+                      .utc(item.createdAt)
+                      .tz(timeZone ?? 'UTC')
+                      .format('DD/MM/YYYY, HH:mm:ss')}
                   </p>
                 </div>
                 {item.readAt === null ? (

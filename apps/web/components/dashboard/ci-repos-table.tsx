@@ -17,6 +17,8 @@ import { CopyButton } from '@/components/ui/copy-button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TextInput } from '@/components/ui/text-input'
 import { useCopyToClipboard } from '@/lib/use-copy-to-clipboard'
+import { dayjs } from '@/lib/dayjs'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 import type { TCiWorkflowAction } from '@/lib/ci-workflow-snippets'
 import { CI_WORKFLOW_SNIPPETS, ECiWorkflowAction } from '@/lib/ci-workflow-snippets'
 import { CiWorkflowSnippet } from '@/components/ci-workflow-snippet'
@@ -55,6 +57,7 @@ export function CiReposTable({ rows }: { rows: ICiRepoTableRow[] }) {
   const router = useRouter()
   const { copied, copy } = useCopyToClipboard()
   const [query, setQuery] = useState('')
+  const timeZone = useBrowserTimeZone()
   const [sort, setSort] = useState<IDataTableSort>({ key: 'date', dir: ETableSortDir.DESC })
 
   const visible = useMemo(() => {
@@ -117,7 +120,12 @@ export function CiReposTable({ rows }: { rows: ICiRepoTableRow[] }) {
       align: ETableAlign.END,
       render: (row) => (
         <span className="text-site-faint text-xs whitespace-nowrap">
-          {row.createdAt === null ? '—' : new Date(row.createdAt).toLocaleString()}
+          {row.createdAt === null
+            ? '—'
+            : dayjs
+                .utc(row.createdAt)
+                .tz(timeZone ?? 'UTC')
+                .format('DD/MM/YYYY, HH:mm:ss')}
         </span>
       ),
     },

@@ -20,8 +20,10 @@ import {
   revokeInvitation,
   transferOwnership,
 } from '@/lib/actions/team'
-import { useCopyToClipboard } from '@/lib/use-copy-to-clipboard'
+import { dayjs } from '@/lib/dayjs'
 import { daysUntil } from '@/lib/expiry'
+import { useCopyToClipboard } from '@/lib/use-copy-to-clipboard'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 import { ReceivedInvites } from '@/components/dashboard/received-invites'
 
 // MARK: - Team management
@@ -69,6 +71,7 @@ export function TeamClient({
   const router = useRouter()
   const { copied, copy } = useCopyToClipboard()
   const [pending, startTransition] = useTransition()
+  const timeZone = useBrowserTimeZone()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<(typeof INVITE_ROLES)[number]>('member')
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
@@ -184,7 +187,12 @@ export function TeamClient({
         <span className="text-site-faint text-xs">
           {t(`teamStatus.${member.status}`)}
           {member.joinedAt !== null
-            ? ` · ${t('teamJoined', { date: new Date(member.joinedAt).toLocaleDateString() })}`
+            ? ` · ${t('teamJoined', {
+                date: dayjs
+                  .utc(member.joinedAt)
+                  .tz(timeZone ?? 'UTC')
+                  .format('DD/MM/YYYY'),
+              })}`
             : ''}
         </span>
       ),

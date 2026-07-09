@@ -4,6 +4,8 @@ import { Card } from '@heroui/react/card'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { EmptyState } from '@/components/ui/empty-state'
+import { dayjs } from '@/lib/dayjs'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 
 // MARK: - Compare
 
@@ -19,6 +21,7 @@ export interface ICompareScan {
 /** Scan comparison UI: select host and two scans, view delta on score and findings. */
 export function CompareClient({ scans }: { scans: ICompareScan[] }) {
   const t = useTranslations('dashboard')
+  const timeZone = useBrowserTimeZone()
 
   const hosts = useMemo(() => [...new Set(scans.map((s) => s.host))].toSorted(), [scans])
   const [host, setHost] = useState(hosts[0] ?? '')
@@ -55,7 +58,10 @@ export function CompareClient({ scans }: { scans: ICompareScan[] }) {
           onChange={setBId}
           options={forHost.map((s) => ({
             value: s.id,
-            label: new Date(s.createdAt).toLocaleString(),
+            label: dayjs
+              .utc(s.createdAt)
+              .tz(timeZone ?? 'UTC')
+              .format('DD/MM/YYYY, HH:mm:ss'),
           }))}
         />
         <Select
@@ -64,7 +70,10 @@ export function CompareClient({ scans }: { scans: ICompareScan[] }) {
           onChange={setAId}
           options={forHost.map((s) => ({
             value: s.id,
-            label: new Date(s.createdAt).toLocaleString(),
+            label: dayjs
+              .utc(s.createdAt)
+              .tz(timeZone ?? 'UTC')
+              .format('DD/MM/YYYY, HH:mm:ss'),
           }))}
         />
       </div>
