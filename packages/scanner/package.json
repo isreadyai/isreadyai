@@ -1,6 +1,6 @@
 {
   "name": "@isreadyai/scanner",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Runtime-agnostic engine that audits whether a site is ready for AI crawlers and LLM search engines.",
   "license": "MIT",
   "author": "Smart Squad S.r.l. (https://smartsquad.io)",
