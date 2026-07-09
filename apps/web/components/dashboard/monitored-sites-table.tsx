@@ -4,6 +4,8 @@ import type { IDataTableColumn } from '@/components/ui/data-table'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { DataTable, RowActions, ETableAlign } from '@/components/ui/data-table'
+import { dayjs } from '@/lib/dayjs'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 
 // MARK: - Monitored sites table
 
@@ -18,6 +20,7 @@ export interface IMonitoredSiteRow {
 export function MonitoredSitesTable({ rows }: { rows: IMonitoredSiteRow[] }) {
   const t = useTranslations('dashboard')
   const router = useRouter()
+  const timeZone = useBrowserTimeZone()
 
   const columns: Array<IDataTableColumn<IMonitoredSiteRow>> = [
     {
@@ -42,7 +45,12 @@ export function MonitoredSitesTable({ rows }: { rows: IMonitoredSiteRow[] }) {
       align: ETableAlign.END,
       render: (row) => (
         <span className="text-site-faint text-xs whitespace-nowrap">
-          {row.nextCheckAt !== null ? new Date(row.nextCheckAt).toLocaleDateString() : '—'}
+          {row.nextCheckAt !== null
+            ? dayjs
+                .utc(row.nextCheckAt)
+                .tz(timeZone ?? 'UTC')
+                .format('DD/MM/YYYY')
+            : '—'}
         </span>
       ),
     },

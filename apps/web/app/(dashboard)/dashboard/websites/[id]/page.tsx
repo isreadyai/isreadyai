@@ -154,25 +154,27 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
 
       <div className="grid gap-6 lg:grid-cols-2">
         {latestReport !== null && overallScore !== null && latestScan !== null ? (
-          <div className="border-site-border bg-site-surface/50 hover:border-site-accent-dim relative grid items-center gap-8 rounded-2xl border p-8 transition-colors sm:grid-cols-[auto_1fr]">
+          <div className="border-site-border bg-site-surface/50 hover:border-site-accent-dim @container relative rounded-2xl border p-8 transition-colors">
             <Link
               href={`/dashboard/websites/${id}/scans/${latestScan.id}`}
               aria-label={td('siteOpenLatestScan')}
               className="absolute inset-0 z-0 rounded-2xl"
             />
-            <ScoreRing
-              score={overallScore}
-              grade={gradeOf(overallScore)}
-              label={tr(`grade.${gradeOf(overallScore)}`)}
-            />
-            <div className="space-y-3">
-              {latestReport.categories.map((category) => (
-                <CategoryBar key={category.category} category={category} />
-              ))}
-              {deepScore !== null ? <DeepScanBar score={deepScore} divider /> : null}
-              {smartScore !== null ? (
-                <SmartAgentBar score={smartScore} divider={deepScore === null} />
-              ) : null}
+            <div className="grid items-center gap-8 @md:grid-cols-[auto_1fr]">
+              <ScoreRing
+                score={overallScore}
+                grade={gradeOf(overallScore)}
+                label={tr(`grade.${gradeOf(overallScore)}`)}
+              />
+              <div className="@container space-y-3">
+                {latestReport.categories.map((category) => (
+                  <CategoryBar key={category.category} category={category} />
+                ))}
+                {deepScore !== null ? <DeepScanBar score={deepScore} divider /> : null}
+                {smartScore !== null ? (
+                  <SmartAgentBar score={smartScore} divider={deepScore === null} />
+                ) : null}
+              </div>
             </div>
           </div>
         ) : (

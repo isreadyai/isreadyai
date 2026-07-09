@@ -32,11 +32,13 @@ import { ReportStickyBar } from './report-sticky-bar'
 import { DeepScanSection } from './deep-scan-section'
 import { SmartAgentDeepSection } from './smart-agent-deep-section'
 import { PremiumTiers, type ITierPrices } from '@/components/premium-tiers'
+import { dayjs } from '@/lib/dayjs'
 import { AiSearchSection } from './ai-search-section'
 import { SmartAgentSection } from './smart-agent-section'
 import { SolutionSection } from './solution-section'
 import { AskYourSite } from './ask-your-site'
 import { useScanRecord } from './use-scan-record'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 
 // MARK: - Report view (polls until the scan settles)
 
@@ -75,6 +77,7 @@ export function ReportView({
 
   // MARK: - Variables
   const { record, missing, errored, done } = useScanRecord(id)
+  const timeZone = useBrowserTimeZone()
   const [rescanning, setRescanning] = useState(false)
   const deleteConfirm = useConfirm()
   const [deleting, setDeleting] = useState(false)
@@ -373,7 +376,7 @@ export function ReportView({
           className="border-site-border bg-site-surface/50 mt-8 grid items-center gap-8 rounded-2xl border p-5 sm:grid-cols-[auto_1fr] sm:p-8"
         >
           <ScoreRing score={0} grade={skeletonGrade} label={t('scoring')} loading={true} />
-          <div className="space-y-3">
+          <div className="@container space-y-3">
             <AiSearchBar score={0} pending={true} />
             <SmartAgentBar score={0} pending={true} />
             <div className="space-y-1.5 pt-1">
@@ -515,7 +518,12 @@ export function ReportView({
             </p>
             {!deepPending ? (
               <p className="text-site-muted mt-1.5 font-mono text-xs">
-                {t('scannedAt', { date: new Date(record.createdAt).toLocaleString() })}
+                {t('scannedAt', {
+                  date: dayjs
+                    .utc(record.createdAt)
+                    .tz(timeZone ?? 'UTC')
+                    .format('DD/MM/YYYY, HH:mm:ss'),
+                })}
               </p>
             ) : null}
             {!premium ? (
@@ -620,7 +628,7 @@ export function ReportView({
           label={scoringPending ? t('scoring') : t(`grade.${grade}`)}
           loading={scoringPending}
         />
-        <div className="space-y-3">
+        <div className="@container space-y-3">
           <AiSearchBar
             score={aiSearchScore({ base: report.overall, deep: deepScore })}
             pending={scoringPending}

@@ -1,9 +1,14 @@
-// MARK: - Score trend chart (pure SVG, fills its container, no client JS)
+'use client'
+
+// MARK: - Score trend chart (pure SVG, fills its container)
 //
 // Combined-score trend over the user's recent scans, oldest → newest, on a fixed
 // 0–100 axis. The SVG stretches to the full card (preserveAspectRatio="none")
 // with non-scaling strokes so lines stay crisp; axis/date labels and the end dot
 // are HTML overlays positioned by percentage, so they never distort.
+
+import { dayjs } from '@/lib/dayjs'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 
 export interface IScorePoint {
   score: number
@@ -12,8 +17,11 @@ export interface IScorePoint {
 
 const GRID = [0, 50, 100]
 
-function fmtDate(s: string): string {
-  return new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+function fmtDate(s: string, timeZone: string | null): string {
+  return dayjs
+    .utc(s)
+    .tz(timeZone ?? 'UTC')
+    .format('MMM D')
 }
 
 // Score (0–100) → SVG y (0 at top). Module-scoped — captures nothing.
@@ -23,6 +31,7 @@ function py(score: number): number {
 
 /** Score trend chart (pure SVG, fills container, no client JS). */
 export function ScoreSparkline({ points }: { points: IScorePoint[] }) {
+  const timeZone = useBrowserTimeZone()
   const first = points[0]
   const last = points[points.length - 1]
   if (points.length < 2 || first === undefined || last === undefined) {
@@ -98,10 +107,10 @@ export function ScoreSparkline({ points }: { points: IScorePoint[] }) {
         style={{ left: `${px(n - 1)}%`, top: `${py(last.score)}%` }}
       />
       <span className="text-site-faint pointer-events-none absolute bottom-0 left-0.5 font-mono text-[10px]">
-        {fmtDate(first.at)}
+        {fmtDate(first.at, timeZone)}
       </span>
       <span className="text-site-faint pointer-events-none absolute right-0.5 bottom-0 font-mono text-[10px]">
-        {fmtDate(last.at)}
+        {fmtDate(last.at, timeZone)}
       </span>
     </div>
   )

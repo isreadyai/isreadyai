@@ -1,19 +1,24 @@
 'use client'
 
-import type { TGrade } from '@isreadyai/scanner'
-import { useState } from 'react'
+import type { IDataTableColumn, IDataTableSort } from '@/components/ui/data-table'
+import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
   DataTable,
-  ETableAlign,
   RowActions,
-  type IDataTableColumn,
+  ETableSortDir,
+  ETableState,
+  ETableAlign,
 } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
+import { CompactReport } from '@/components/dashboard/compact-report'
 import { CopyButton } from '@/components/ui/copy-button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { GRADE_COLORS } from '@/lib/grade'
+import { TextInput } from '@/components/ui/text-input'
 import { useCopyToClipboard } from '@/lib/use-copy-to-clipboard'
+import { dayjs } from '@/lib/dayjs'
+import { useBrowserTimeZone } from '@/lib/use-browser-time-zone'
 import type { TCiWorkflowAction } from '@/lib/ci-workflow-snippets'
 import { CI_WORKFLOW_SNIPPETS, ECiWorkflowAction } from '@/lib/ci-workflow-snippets'
 import { CiWorkflowSnippet } from '@/components/ci-workflow-snippet'
@@ -25,8 +30,11 @@ export interface ICiRepoTableRow {
   ownerRepo: string
   branch: string | null
   commit: string | null
-  score: number | null
-  grade: TGrade | null
+  overall: number | null
+  failed: number
+  warned: number
+  isDeep: boolean
+  isSmart: boolean
   createdAt: string | null
   /** Internal route to the permanent report page; null until the first CI report lands. */
   reportPath: string | null
@@ -40,16 +48,31 @@ function shortCommit(commit: string): string {
 
 /**
  * Lists the workspace's CI-connected repos with their latest report and a
- * copyable badge. Renders the first-run activation card in place of the table
- * (no rows means no columns to show yet) — mirrors how the website detail's
- * scan history and the overview page's recent-scans/monitored-sites sections
- * swap a bare table for `EmptyState` rather than routing an empty, non-filterable
- * list through `DataTable`'s in-table empty slot.
+ * copyable badge. Mirrors the scans table (filter, compact report, sortable
+ * date/score). Renders the first-run activation card in place of the table
+ * when there are no rows yet.
  */
 export function CiReposTable({ rows }: { rows: ICiRepoTableRow[] }) {
   const t = useTranslations('dashboard')
-  const tr = useTranslations('report')
+  const router = useRouter()
   const { copied, copy } = useCopyToClipboard()
+  const [query, setQuery] = useState('')
+  const timeZone = useBrowserTimeZone()
+  const [sort, setSort] = useState<IDataTableSort>({ key: 'date', dir: ETableSortDir.DESC })
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const filtered = rows.filter((row) => q === '' || row.ownerRepo.toLowerCase().includes(q))
+    const factor = sort.dir === ETableSortDir.ASC ? 1 : -1
+    return filtered.toSorted((a, b) => {
+      if (sort.key === 'score') {
+        return ((a.overall ?? -1) - (b.overall ?? -1)) * factor
+      }
+      const aDate = a.createdAt === null ? 0 : Date.parse(a.createdAt)
+      const bDate = b.createdAt === null ? 0 : Date.parse(b.createdAt)
+      return (aDate - bDate) * factor
+    })
+  }, [rows, query, sort])
 
   if (rows.length === 0) {
     return <CiEmptyState />
@@ -59,37 +82,50 @@ export function CiReposTable({ rows }: { rows: ICiRepoTableRow[] }) {
     {
       key: 'repo',
       header: t('ciColRepo'),
-      render: (row) => (
-        <span className="text-site-text block truncate font-mono text-sm">{row.ownerRepo}</span>
-      ),
+      render: (row) => <span className="text-site-text truncate font-medium">{row.ownerRepo}</span>,
     },
     {
-      key: 'report',
-      header: t('ciColReport'),
+      key: 'branch',
+      header: t('ciColBranch'),
       render: (row) =>
-        row.score === null || row.grade === null || row.branch === null || row.commit === null ? (
-          <span className="text-site-muted text-xs">{t('ciNoReportYet')}</span>
+        row.branch === null || row.commit === null ? (
+          <span className="text-site-faint text-xs">—</span>
         ) : (
-          <div className="min-w-0">
-            <span
-              className="font-mono text-xs font-semibold tracking-wide uppercase"
-              style={{ color: GRADE_COLORS[row.grade] }}
-            >
-              {row.score} · {tr(`grade.${row.grade}`)}
-            </span>
-            <p className="text-site-faint truncate text-xs">
-              {row.branch} @ {shortCommit(row.commit)}
-            </p>
-          </div>
+          <span className="text-site-faint truncate font-mono text-xs">
+            {row.branch} @ {shortCommit(row.commit)}
+          </span>
         ),
+    },
+    {
+      key: 'score',
+      header: t('ciColReport'),
+      sortable: true,
+      render: (row) => (
+        <CompactReport
+          data={{
+            overall: row.overall,
+            failed: row.failed,
+            warned: row.warned,
+            isDeep: row.isDeep,
+            isSmart: row.isSmart,
+            emptyLabel: t('ciNoReportYet'),
+          }}
+        />
+      ),
     },
     {
       key: 'date',
       header: t('colDate'),
+      sortable: true,
       align: ETableAlign.END,
       render: (row) => (
         <span className="text-site-faint text-xs whitespace-nowrap">
-          {row.createdAt === null ? '—' : new Date(row.createdAt).toLocaleDateString()}
+          {row.createdAt === null
+            ? '—'
+            : dayjs
+                .utc(row.createdAt)
+                .tz(timeZone ?? 'UTC')
+                .format('DD/MM/YYYY, HH:mm:ss')}
         </span>
       ),
     },
@@ -113,7 +149,41 @@ export function CiReposTable({ rows }: { rows: ICiRepoTableRow[] }) {
     },
   ]
 
-  return <DataTable columns={columns} rows={rows} getRowKey={(row) => row.slug} />
+  const filtering = query.trim() !== ''
+  const state =
+    visible.length > 0
+      ? ETableState.IDLE
+      : filtering
+        ? ETableState.FILTERED_EMPTY
+        : ETableState.EMPTY
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <TextInput
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder={t('ciSearch')}
+        aria-label={t('ciSearch')}
+        surface="subtle"
+      />
+
+      <DataTable
+        fill
+        columns={columns}
+        rows={visible}
+        getRowKey={(row) => row.slug}
+        onRowClick={(row) => {
+          if (row.reportPath !== null) {
+            router.push(row.reportPath)
+          }
+        }}
+        sort={sort}
+        onSortChange={setSort}
+        state={state}
+        filteredEmptyState={<EmptyState title={t('ciFilteredEmpty')} />}
+      />
+    </div>
+  )
 }
 
 /**

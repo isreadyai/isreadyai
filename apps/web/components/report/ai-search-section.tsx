@@ -39,7 +39,7 @@ export function AiSearchSection({
             label={pending ? t('scoring') : t(`grade.${grade}`)}
             loading={pending}
           />
-          <div className="space-y-3">
+          <div className="@container space-y-3">
             {categories.map((c) => (
               <CategoryBar key={c.category} category={c} pending={pending} />
             ))}

@@ -222,9 +222,15 @@ canonical container.
 - **Mobile-first**: start from the small-screen layout and add `sm:` / `md:`
   breakpoints upward.
 - **Grids** carry structural intent. The category bar uses a fixed three-track
-  grid `grid-cols-[8rem_1fr_2.5rem]` (label · bar · score); the smart-agent
+  grid `grid-cols-[12rem_1fr_2.5rem]` (label · bar · score); the smart-agent
   window splits into `sm:grid-cols-2` with a 1px `bg-site-border` gutter
   (`gap-px`) to draw hairline panel dividers.
+- **Container queries** drive layout that depends on the width of the card a
+  component sits in rather than the viewport: the score-bar rows
+  (`category-bar.tsx`) switch to their inline three-track layout at `@md` of
+  their `@container` wrapper, so the same component fits both the full-width
+  report hero and a half-width dashboard card (e.g. the website detail's
+  two-column grid, where the viewport is wide but the card is not).
 
 The decorative **`.bg-grid-faint`** utility paints a masked radial dot grid using
 `--color-site-border`; it is `pointer-events: none` background texture only.
