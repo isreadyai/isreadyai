@@ -9,13 +9,16 @@ import { useEffect, useRef, useState } from 'react'
 const FADE_DISTANCE_PX = 320
 
 export function ProductHuntBadge(
-  props: React.ComponentPropsWithoutRef<'a'> & { className?: string }
+  props: React.ComponentPropsWithoutRef<'a'> & { className?: string },
 ) {
   // MARK: - Variables
   const { className: propsClassName, ...rest } = props
   const [opacity, setOpacity] = useState(1)
   const ticking = useRef(false)
-  const className = [propsClassName, 'hidden drop-shadow-lg transition-opacity hover:opacity-90 sm:block']
+  const className = [
+    propsClassName,
+    'hidden drop-shadow-lg transition-opacity hover:opacity-90 sm:block',
+  ]
     .filter(Boolean)
     .join(' ')
 
