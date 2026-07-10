@@ -9,6 +9,7 @@ import { GoogleTagManager } from '@next/third-parties/google'
 import { ScrollToTopButton } from '@/components/scroll-to-top-button'
 import { Toaster } from '@/components/ui/toast'
 import { CookieConsent } from '@/components/consent/cookie-consent'
+import { DataFastAnalytics } from '@/components/analytics/datafast-analytics'
 import { EnsureSession } from '@/components/auth/ensure-session'
 import { SITE_URL, GTM_ID } from '@/lib/site'
 import './globals.css'
@@ -82,6 +83,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="bg-site-background text-site-text min-h-dvh antialiased">
         <NextIntlClientProvider messages={messages}>
           <EnsureSession />
+          <DataFastAnalytics />
           {children}
           <ScrollToTopButton />
           <Toaster />

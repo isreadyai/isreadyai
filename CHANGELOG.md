@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Web app (`apps/web`)
+
+- **DataFast analytics bootstrap**: added the `datafast` NPM SDK as a guarded, consent-aware singleton that starts only on the production host, after idle time, and keeps initialization failures isolated from the site render path.
+
 ## [1.0.5] - 2026-07-09
 
 ### Added

@@ -3,12 +3,15 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import {
+  readAnalyticsConsent,
+  type TAnalyticsConsent,
+  writeAnalyticsConsent,
+} from '@/lib/analytics-consent'
 
 // MARK: - Cookie consent (Google Consent Mode v2)
 
-const STORAGE_KEY = 'isready-cookie-consent'
 const REOPEN_EVENT = 'open-cookie-consent'
-type TChoice = 'granted' | 'denied'
 
 declare global {
   interface Window {
@@ -18,7 +21,7 @@ declare global {
 
 // Consent defaults are set to 'denied' before GTM loads (inline script in the
 // root layout); this only flips analytics/ads to the visitor's choice.
-function updateConsent(choice: TChoice): void {
+function updateConsent(choice: TAnalyticsConsent): void {
   window.gtag?.('consent', 'update', {
     analytics_storage: choice,
     ad_storage: choice,
@@ -51,7 +54,7 @@ export function CookieConsent() {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as TChoice | null
+    const stored = readAnalyticsConsent()
     if (stored === 'granted') {
       updateConsent('granted')
     } else if (stored === null) {
@@ -62,8 +65,8 @@ export function CookieConsent() {
     return () => window.removeEventListener(REOPEN_EVENT, reopen)
   }, [])
 
-  function choose(choice: TChoice): void {
-    localStorage.setItem(STORAGE_KEY, choice)
+  function choose(choice: TAnalyticsConsent): void {
+    writeAnalyticsConsent(choice)
     updateConsent(choice)
     setOpen(false)
   }
