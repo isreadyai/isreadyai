@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Web app (`apps/web`)
+
+- **DataFast revenue attribution for Stripe Checkout**: checkout sessions now pass DataFast visitor/session cookie metadata when available, and the analytics bootstrap uses cookie-backed IDs after consent so revenue can be attributed in DataFast.
+
 ## [1.0.6] - 2026-07-10
 
 ### Added

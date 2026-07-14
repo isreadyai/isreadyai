@@ -4,6 +4,7 @@ import type { TPaidPlan } from '@/lib/plans'
 import { SITE_URL } from '@/lib/site'
 import { getPriceId, getStripe, isStripeConfigured } from '@/lib/stripe'
 import type { IGaSession } from '@/lib/analytics-server'
+import type { IDataFastSession } from '@/lib/datafast-server'
 
 // MARK: - Checkout session helper
 
@@ -34,6 +35,7 @@ export async function startCheckout(
   plan: TPaidPlan,
   origin?: string,
   ga?: IGaSession | null,
+  datafast?: IDataFastSession | null,
 ): Promise<TStartCheckout> {
   const base = origin ?? SITE_URL
   const priceId = getPriceId(plan)
@@ -95,6 +97,12 @@ export async function startCheckout(
         plan,
         ga_client_id: ga?.clientId ?? '',
         ga_session_id: ga?.sessionId ?? '',
+        ...(datafast !== null && datafast !== undefined
+          ? {
+              datafast_visitor_id: datafast.visitorId,
+              datafast_session_id: datafast.sessionId,
+            }
+          : {}),
       },
       subscription_data: { metadata: { supabase_user_id: userId, plan } },
     },
