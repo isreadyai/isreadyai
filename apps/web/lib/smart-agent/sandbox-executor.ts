@@ -47,11 +47,13 @@ export class SandboxAgentBrowserExecutor implements ISmartAgentCommandExecutor {
             ...credentials,
             source: { type: 'snapshot', snapshotId: SNAPSHOT_ID },
             timeout: 120_000,
+            persistent: false,
           })
         : await Sandbox.create({
             ...credentials,
             runtime: 'node24',
             timeout: 120_000,
+            persistent: false,
           })
 
     if (SNAPSHOT_ID === undefined || SNAPSHOT_ID.length === 0) {
@@ -89,6 +91,7 @@ export async function createAgentBrowserSandboxSnapshot(): Promise<string> {
     ...sandboxCredentials(),
     runtime: 'node24',
     timeout: 300_000,
+    persistent: false,
   })
   try {
     await bootstrap(sandbox)
