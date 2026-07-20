@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { getAuthenticatedUser } from '@/lib/auth'
 import { startCheckout } from '@/lib/checkout'
 import { gaSessionFromCookies } from '@/lib/analytics-server'
+import { dataFastSessionFromCookies } from '@/lib/datafast-server'
 import { EPlan } from '@/lib/plans'
 import { isStripeConfigured } from '@/lib/stripe'
 
@@ -30,7 +31,15 @@ export async function POST(request: Request): Promise<Response> {
   const origin = new URL(request.url).origin
   const cookieStore = await cookies()
   const ga = gaSessionFromCookies((name) => cookieStore.get(name)?.value)
-  const result = await startCheckout(user.id, user.email ?? null, parsed.data.plan, origin, ga)
+  const datafast = dataFastSessionFromCookies((name) => cookieStore.get(name)?.value)
+  const result = await startCheckout(
+    user.id,
+    user.email ?? null,
+    parsed.data.plan,
+    origin,
+    ga,
+    datafast,
+  )
 
   // An existing subscriber is repriced in place, so there's no Stripe URL — the
   // client lands on billing where the webhook reflects the new plan.

@@ -36,7 +36,6 @@ export function getDataFast(): Promise<DataFastWeb | null> {
       await datafastClient?.optIn()
       datafastClient = await initDataFast({
         websiteId: DATAFAST_WEBSITE_ID,
-        cookieless: true,
         autoCapturePageviews: true,
       })
       return datafastClient
