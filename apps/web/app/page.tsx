@@ -467,6 +467,52 @@ export default async function HomePage({
         </section>
       </main>
       <SiteFooter />
+      <div
+        inert
+        aria-hidden="true"
+        className="
+          pointer-events-none absolute top-0 left-0 isolate
+          after:absolute after:inset-0 after:z-20
+          after:bg-site-background after:content-['']
+        "
+      >
+        <div className="relative z-10">
+          <a href="https://postyourstartup.co/startup/isready-ai-1?ref=badge" target="_blank">
+            {/* eslint-disable-next-line @next/next/no-img-element -- external PostYourStartup badge endpoint */}
+            <img
+              src="https://postyourstartup.co/api/badge/isready-ai-1?theme=light"
+              alt="Featured on PostYourStartup"
+              width="212"
+              height="55"
+            />
+          </a>
+          <a
+            href="https://launchpadly.co/startup/isreadyai?ref=badge"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-launchpadly-badge="isreadyai"
+            data-launchpadly-badge-variant="listed-on"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- external  Launchpadly — IsReady.AI (listed-on) */}
+            <img
+              src="https://launchpadly.co/embed/badges/startup/isreadyai.svg?variant=listed-on"
+              alt="Launchpadly Startup Directory"
+              width="260"
+              height="48"
+              style={{ display: 'block', border: 0 }}
+            />
+          </a>
+          <a href="https://newtool.site/item/isreadyai" target="_blank" rel="noopener noreferrer">
+            {/* eslint-disable-next-line @next/next/no-img-element -- external  https://newtool.site — IsReady.AI (listed-on) */}
+            <img
+              src="https://newtool.site/badges/newtool-light.svg"
+              alt="Featured on NewTool.site"
+              height="54px"
+              width="auto"
+            />
+          </a>
+        </div>
+      </div>
     </>
   )
 }
