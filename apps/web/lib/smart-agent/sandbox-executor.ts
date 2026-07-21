@@ -95,7 +95,7 @@ export async function createAgentBrowserSandboxSnapshot(): Promise<string> {
   })
   try {
     await bootstrap(sandbox)
-    const snapshot = await sandbox.snapshot()
+    const snapshot = await sandbox.snapshot({ expiration: 0 })
     return snapshot.snapshotId
   } finally {
     await sandbox.stop().catch(() => undefined)
