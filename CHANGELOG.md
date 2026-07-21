@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Web app (`apps/web`)
 
+- Added badges for Launchpadly and NewTool.site to the landing page, linking to the respective listings for IsReady.AI.
+
+#### Web app (`apps/web`)
+
 - **DataFast revenue attribution for Stripe Checkout**: checkout sessions now pass DataFast visitor/session cookie metadata when available, and the analytics bootstrap uses cookie-backed IDs after consent so revenue can be attributed in DataFast.
 
 ## [1.0.6] - 2026-07-10
