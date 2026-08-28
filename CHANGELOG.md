@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **DataFast revenue attribution for Stripe Checkout**: checkout sessions now pass DataFast visitor/session cookie metadata when available, and the analytics bootstrap uses cookie-backed IDs after consent so revenue can be attributed in DataFast.
 
+### Changed
+
+#### Web app (`apps/web`)
+
+- Upgraded the Stripe SDK to v22 (API `2026-08-26.dahlia`): the webhook re-fetches subscriptions and invoices under the pinned API version and reads the Basil `invoice.parent` and item-level `current_period_end` shapes.
+- Migrated to AI SDK 7 (`instructions`, `onEnd`, `usage`, `isStepCount`) and to `@vercel/sandbox` 3 managed images (`vercel/sandbox/node:24`).
+
+#### Monorepo infrastructure
+
+- Updated dependencies: Next 16.3, TypeScript 7, HeroUI 3.2.4, supabase-js 2.112, `@types/node` 26, oxfmt 0.65 (Supabase package), Supabase CLI 2.116.
+
 ### Fixed
 
 #### Web app (`apps/web`)
@@ -27,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Supabase package (`@isreadyai/supabase`)
 
 - Fixed the daily anonymous-user cleanup failing on the workspace owner guard: stale anonymous users' ownerless personal workspaces are now removed first.
+
+#### Monorepo infrastructure
+
+- Fixed `type-check` and `next build` failing under Bun's isolated linker and global virtual store: `bunfig.toml` now pins the hoisted linker so Turbopack and TypeScript resolve transitive packages.
 
 ## [1.0.6] - 2026-07-10
 

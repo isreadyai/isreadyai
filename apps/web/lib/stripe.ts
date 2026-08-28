@@ -10,7 +10,7 @@ import { EPlan } from '@/lib/plans'
  * and is never logged or exposed to the client bundle.
  */
 
-const API_VERSION = '2025-02-24.acacia'
+const API_VERSION = '2026-08-26.dahlia'
 
 let stripe: Stripe | null = null
 

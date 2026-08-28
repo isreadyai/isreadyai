@@ -51,7 +51,7 @@ export class SandboxAgentBrowserExecutor implements ISmartAgentCommandExecutor {
           })
         : await Sandbox.create({
             ...credentials,
-            runtime: 'node24',
+            image: 'vercel/sandbox/node:24',
             timeout: 120_000,
             persistent: false,
           })
@@ -89,7 +89,7 @@ export class SandboxAgentBrowserExecutor implements ISmartAgentCommandExecutor {
 export async function createAgentBrowserSandboxSnapshot(): Promise<string> {
   const sandbox = await Sandbox.create({
     ...sandboxCredentials(),
-    runtime: 'node24',
+    image: 'vercel/sandbox/node:24',
     timeout: 300_000,
     persistent: false,
   })

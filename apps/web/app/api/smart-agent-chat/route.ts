@@ -1,8 +1,8 @@
 import {
   convertToModelMessages,
   generateId,
+  isStepCount,
   safeValidateUIMessages,
-  stepCountIs,
   streamText,
   tool,
 } from 'ai'
@@ -244,13 +244,13 @@ export async function POST(request: Request): Promise<Response> {
           'x-title': 'isready.ai Ask your site',
         },
     model: byoModel ?? process.env.SMART_AGENT_CHAT_MODEL ?? DEFAULT_MODEL,
-    system: SYSTEM_PROMPT,
+    instructions: SYSTEM_PROMPT,
     messages: await convertToModelMessages(validatedMessages.data, { tools }),
-    stopWhen: stepCountIs(5),
+    stopWhen: isStepCount(5),
     tools,
     // Record one metered message once the generation settles. Idempotent on the
     // provider generation id, so stream retries never double-count.
-    onFinish: async ({ response, totalUsage }) => {
+    onEnd: async ({ response, usage }) => {
       if (meterOwner === null) {
         return
       }
@@ -260,7 +260,7 @@ export async function POST(request: Request): Promise<Response> {
           ...meterOwner,
           generationId: response.id,
           messages: 1,
-          tokens: totalUsage.totalTokens ?? 0,
+          tokens: usage.totalTokens ?? 0,
         })
       } catch (error) {
         // Never break the user's stream over a metering write failure.
@@ -279,7 +279,7 @@ export async function POST(request: Request): Promise<Response> {
     // Without this the generated assistant message persists with an empty id,
     // which then collides on duplicate "" React keys when the thread reloads.
     generateMessageId: generateId,
-    onFinish: async ({ messages }) => {
+    onEnd: async ({ messages }) => {
       if (access.userId === null) {
         return
       }
