@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+## [1.1.1] - 2026-08-28
 
-#### Web app (`apps/web`)
+### Fixed
 
 - Fixed the dashboard overview crashing with "Cannot destructure property 'surface'" when unread alerts exist: banner severity constants moved out of the `'use client'` module so Server Components no longer dot into a client reference.
 
