@@ -83,33 +83,33 @@ export async function startCheckout(
     return { updated: true }
   }
 
-  const session = await stripe.checkout.sessions.create(
-    {
-      mode: 'subscription',
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      // Adaptive Pricing (enable in the Stripe dashboard) localises the currency;
-      // the price's currency_options already carry EUR/USD/GBP amounts.
-      success_url: `${base}/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/dashboard/billing?checkout=cancelled`,
-      metadata: {
-        supabase_user_id: userId,
-        plan,
-        ga_client_id: ga?.clientId ?? '',
-        ga_session_id: ga?.sessionId ?? '',
-        ...(datafast !== null && datafast !== undefined
-          ? {
-              datafast_visitor_id: datafast.visitorId,
-              datafast_session_id: datafast.sessionId,
-            }
-          : {}),
-      },
-      subscription_data: { metadata: { supabase_user_id: userId, plan } },
+  // No idempotency key: the analytics ids in `metadata` change between attempts,
+  // and Stripe rejects a reused key with different params. A duplicate Checkout
+  // Session is harmless — the usable-subscription check above and the webhook's
+  // duplicate reconciler keep the customer on exactly one subscription.
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    customer: customerId,
+    line_items: [{ price: priceId, quantity: 1 }],
+    allow_promotion_codes: true,
+    // Adaptive Pricing (enable in the Stripe dashboard) localises the currency;
+    // the price's currency_options already carry EUR/USD/GBP amounts.
+    success_url: `${base}/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${base}/dashboard/billing?checkout=cancelled`,
+    metadata: {
+      supabase_user_id: userId,
+      plan,
+      ga_client_id: ga?.clientId ?? '',
+      ga_session_id: ga?.sessionId ?? '',
+      ...(datafast !== null && datafast !== undefined
+        ? {
+            datafast_visitor_id: datafast.visitorId,
+            datafast_session_id: datafast.sessionId,
+          }
+        : {}),
     },
-    // Idempotent per (user, plan): a double-click or retry returns the same
-    // session instead of opening a second subscription.
-    { idempotencyKey: `checkout:${userId}:${plan}` },
-  )
+    subscription_data: { metadata: { supabase_user_id: userId, plan } },
+  })
 
   return session.url !== null ? { url: session.url } : { error: 'failed' }
 }
