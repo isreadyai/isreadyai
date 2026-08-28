@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed checkout retries failing with a Stripe idempotency error when analytics session ids changed between attempts.
 
+#### Supabase package (`@isreadyai/supabase`)
+
+- Fixed the daily anonymous-user cleanup failing on the workspace owner guard: stale anonymous users' ownerless personal workspaces are now removed first.
+
 ## [1.0.6] - 2026-07-10
 
 ### Added

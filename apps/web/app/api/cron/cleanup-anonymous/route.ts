@@ -26,6 +26,9 @@ export async function GET(request: Request): Promise<Response> {
     p_retention_days: RETENTION_DAYS,
   })
   if (error !== null) {
+    console.error(
+      `cron/cleanup-anonymous: delete_stale_anonymous_users failed: ${error.code} ${error.message}`,
+    )
     return Response.json({ error: 'cleanup_failed' }, { status: 500 })
   }
 
