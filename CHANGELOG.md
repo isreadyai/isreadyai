@@ -9,19 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### Web app (`apps/web`)
-
+- Enabled promotion codes in Stripe Checkout so subscribers can redeem coupon codes when paying.
 - Added badges for Launchpadly and NewTool.site to the landing page, linking to the respective listings for IsReady.AI.
-
-#### Web app (`apps/web`)
-
 - **DataFast revenue attribution for Stripe Checkout**: checkout sessions now pass DataFast visitor/session cookie metadata when available, and the analytics bootstrap uses cookie-backed IDs after consent so revenue can be attributed in DataFast.
+
+### Changed
+
+- Upgraded the Stripe SDK to v22 (API `2026-08-26.dahlia`): the webhook re-fetches subscriptions and invoices under the pinned API version and reads the Basil `invoice.parent` and item-level `current_period_end` shapes.
+- Migrated to AI SDK 7 (`instructions`, `onEnd`, `usage`, `isStepCount`) and to `@vercel/sandbox` 3 managed images (`vercel/sandbox/node:24`).
+- Updated dependencies: Next 16.3, TypeScript 7, HeroUI 3.2.4, supabase-js 2.112, `@types/node` 26, oxfmt 0.65 (Supabase package), Supabase CLI 2.116.
+- Fixed checkout retries failing with a Stripe idempotency error when analytics session ids changed between attempts.
+- Fixed the daily anonymous-user cleanup failing on the workspace owner guard: stale anonymous users' ownerless personal workspaces are now removed first.
+- Fixed `type-check` and `next build` failing under Bun's isolated linker and global virtual store: `bunfig.toml` now pins the hoisted linker so Turbopack and TypeScript resolve transitive packages.
 
 ## [1.0.6] - 2026-07-10
 
 ### Added
-
-#### Web app (`apps/web`)
 
 - **DataFast analytics bootstrap**: added the `datafast` NPM SDK as a guarded, consent-aware singleton that starts only on the production host, after idle time, and keeps initialization failures isolated from the site render path.
 
@@ -29,31 +32,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### Web app (`apps/web`)
-
 - **Product Hunt launch badge on the landing page**: pinned bottom-right, fades out over the first ~320px of scroll so it clears the corner before the scroll-to-top button appears; hidden below `sm`.
 
 ## [1.0.4] - 2026-07-09
 
-### Fixed
-
-#### CLI (`apps/cli`)
+### Changed
 
 - **CLI and web scores now use the same readiness headline**: the shared scanner scorer is used for the combined AI Search + Smart Agent score, `--quiet` / telemetry / exit status follow that headline when Smart Agent runs, and `--json` now includes a `readiness` summary without changing the raw report shape. The CLI version is read from `apps/cli/package.json` instead of a stale hardcoded constant.
-
-#### Scanner engine (`@isreadyai/scanner`)
-
 - **Readiness headline scoring is shared**: AI Search now resolves to the canonical single-page or deep site score in one package-level helper, and Smart Agent is averaged in only as a separate completed track.
-
-#### Web app (`apps/web`)
-
 - **Deep scan score no longer drifts from the CLI**: report pages, badges, and dashboard summary columns use the scanner's canonical `site.overall` for the AI Search deep track instead of recomputing a browser-only page average.
 
 ## [1.0.3] - 2026-07-09
 
-### Fixed
-
-#### Web app (`apps/web`)
+### Changed
 
 - **Scan reports with binary evidence now persist cleanly**: report JSON is sanitized before every `jsonb` write (`/api/scan`, CI uploads, and monitoring cron), removing null bytes that Postgres rejects. This fixes web scans such as `www.producthunt.com`, whose gzipped sitemap preview made the CLI succeed but the UI fail at report persistence time.
 - **Dashboard/report dates no longer cause hydration mismatches**: date rendering now uses `dayjs` with the viewer's browser timezone after mount while keeping a server/client-stable fallback for hydration. The visible format stays the previous numeric style (`DD/MM/YYYY` and `DD/MM/YYYY, HH:mm:ss`) instead of locale-dependent server/browser output.
@@ -69,76 +60,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-#### Web app (`apps/web`)
-
 - **Locked public badge wording is neutral**: the badge shown for any ineligible domain (invalid host, unverified, not upgraded, not activated) used to read "premium", implying that ineligibility always meant a plan gate. It now reads "locked", which is accurate regardless of the cause.
-
-### Fixed
-
-#### Web app (`apps/web`)
-
 - **Public badge no longer sticks on "premium" after a site goes live** (`/badge/[domain]`): the locked badge was cached with a 24h `stale-while-revalidate`, so a domain that had just been verified, upgraded and badge-activated kept serving the stale locked "premium" badge for up to a day even though the origin already returned the real score. The locked (and not-yet-scored) badge now carries a short TTL and revalidation window, so the flip to the live score happens within ~a minute.
 - **Badge lookup canonicalizes the host** (`verifiedDomainBadgeScore`): `websites.host` is stored lowercased with a leading `www.` stripped, but the badge lookup compared the raw request host — so `/badge/www.deluisa.bio` (or a mixed-case host) missed the row and wrongly fell through to the locked badge. The lookup now normalizes the host the same way it is stored.
-
-### Documentation
-
 - README `## Contributing` now includes the pre-PR check suite (`lint`, `format`, `test`, `type-check`, `build`) and a short summary of the scanner-check recipe, pointing to `CONTRIBUTING.md` for the full detail.
 
 ## [0.2.0] - 2026-07-02
 
-### Changed
-
-#### GitHub Action (`action.yml`)
-
-- The audit action now **deep-crawls** the site (sitemap + internal-link crawl) instead of scanning a single page, and writes the full per-page report to the job summary.
-- Added a `command` input that boots a branch environment in the background (run with `bash -c`), waits for `url` to respond, then scans that local URL — so a branch can be gated before it ships. Documented as trusted-input-only (never wire it from `pull_request_target` or fork-controlled data).
-- Added an `api-key` input (plus `report` toggle and `api-url` override): when set, the run uploads an authenticated CI report to isready.ai and prints a **branch-stable repo badge** snippet. Pro/Team only.
-- Added `badge` and `report-url` outputs alongside the existing `score` and `grade`.
-- The action sends an anonymous, PII-free usage ping (host + score); opt out with `TELEMETRY=false`.
-
-#### Web app (`apps/web`)
-
-- **Canonical host normalization** (`normalizeHost`): hosts are stored and compared lowercased with a single leading `www.` stripped — `www.x.com` and `x.com` are one site, while subdomains stay distinct (`massimo.deluisa.bio` ≠ `deluisa.bio`). Applied to add-website and CI badge matching.
-- **Monitoring cron de-duplicates by host**: a domain tracked by several workspaces is crawled (deep + Smart Agent) once per tick and the result fanned out to each website's scan row, instead of re-scanning the host per workspace.
-- Website-detail scan history filters on the indexed `scans.host` column instead of parsing every scan URL in JS.
-- Premium-upsell CTA placement is content-aware (top-right beside the title when the card is title-only, otherwise bottom-right); documented in `DESIGN.md`.
-- Diagnostic logging now runs through a shared app `logger` (emoji + timestamped; verbose in dev, errors-only in production) instead of scattered `console.error`; the unused scanner logger scaffolding was removed.
-
 ### Added
 
-#### GitHub Action — fix PR (`fix-action/action.yml`)
-
-- New action that scans a URL, runs an isready.ai AI agent **inside the runner** under a short-lived, metered, inference-scoped token (the real gateway key never leaves isready.ai; your source is never stored), applies AI-readiness fixes, and opens a pull request. Stages only the agent's reported changed files — never `git add -A`. Requires a Pro or Team API key.
-- Writes a job summary explaining every outcome, including the silent 0-change case (lists the non-pass checks, so a green run with no PR reads as "already AI-ready").
-- Emails the API-key owner when it opens a PR (`/api/fix-notify`, Resend; recipient resolved server-side, link pinned to `github.com`).
-
-#### Web app (`apps/web`)
-
+- New fix-PR GitHub Action that scans a URL, runs an isready.ai AI agent **inside the runner** under a short-lived, metered, inference-scoped token (the real gateway key never leaves isready.ai; your source is never stored), applies AI-readiness fixes, and opens a pull request. Stages only the agent's reported changed files — never `git add -A`. Requires a Pro or Team API key.
+- Fix-PR action writes a job summary explaining every outcome, including the silent 0-change case (lists the non-pass checks, so a green run with no PR reads as "already AI-ready").
+- Fix-PR action emails the API-key owner when it opens a PR (`/api/fix-notify`, Resend; recipient resolved server-side, link pinned to `github.com`).
 - **Campaign hero copy variants** (`?mkt=1`…`8`): paid/marketing landing URLs select an alternative hero headline + subtitle, rendered on the server so there is no copy flash; the canonical `/` always serves the default copy, so SEO and AI crawlers are unaffected.
 - **My Websites scan inheritance**: adding a site claims your own past scans of that exact host (including anonymous, pre-signup ones); verifying ownership claims all still-unclaimed scans of the host (anonymous and others'), never touching scans already owned by another workspace.
 - GA4 server-side conversions via the Measurement Protocol — `purchase` (from the Stripe webhook, with the `_ga` client/session carried through Stripe metadata) and `sign_up` (from the auth callback); both consent-aware.
 - Cookie-consent banner (Consent Mode v2), footer Privacy / Terms / Sitemap links, and an expanded `sitemap.xml`.
 - **Contact / feedback page** (`/contact`, footer-linked) plus a **fraudulent-domain-claim report** (deep-linked from the website verify banner with the host pre-filled): submissions create a ClickUp task, protected by Turnstile + per-IP/global rate-limiting.
-
-#### Supabase package (`@isreadyai/supabase`)
-
 - `scans.host` — a normalized, indexed generated column (`scans_host_idx`) used as the canonical key for host matching, scan inheritance and the website-detail history.
+- Audit action `command` input that boots a branch environment in the background (run with `bash -c`), waits for `url` to respond, then scans that local URL — so a branch can be gated before it ships. Documented as trusted-input-only (never wire it from `pull_request_target` or fork-controlled data).
+- Audit action `api-key` input (plus `report` toggle and `api-url` override): when set, the run uploads an authenticated CI report to isready.ai and prints a **branch-stable repo badge** snippet. Pro/Team only.
+- Audit action `badge` and `report-url` outputs alongside the existing `score` and `grade`.
+- Audit action sends an anonymous, PII-free usage ping (host + score); opt out with `TELEMETRY=false`.
 
-### Fixed
+### Changed
 
-#### Scanner engine (`@isreadyai/scanner`)
-
+- The audit action now **deep-crawls** the site (sitemap + internal-link crawl) instead of scanning a single page, and writes the full per-page report to the job summary.
+- **Canonical host normalization** (`normalizeHost`): hosts are stored and compared lowercased with a single leading `www.` stripped — `www.x.com` and `x.com` are one site, while subdomains stay distinct (`massimo.deluisa.bio` ≠ `deluisa.bio`). Applied to add-website and CI badge matching.
+- **Monitoring cron de-duplicates by host**: a domain tracked by several workspaces is crawled (deep + Smart Agent) once per tick and the result fanned out to each website's scan row, instead of re-scanning the host per workspace.
+- Website-detail scan history filters on the indexed `scans.host` column instead of parsing every scan URL in JS.
+- Premium-upsell CTA placement is content-aware (top-right beside the title when the card is title-only, otherwise bottom-right); documented in `DESIGN.md`.
+- Diagnostic logging now runs through a shared app `logger` (emoji + timestamped; verbose in dev, errors-only in production) instead of scattered `console.error`; the unused scanner logger scaffolding was removed.
 - `crawler.anti-bot` no longer false-positives on ordinary page content or the legitimate Turnstile widget — it flags only a real Cloudflare challenge (challenge-only markers or the interstitial `<title>`).
-
-#### Web app (`apps/web`)
-
 - `profiles` billing columns (`plan`, Stripe fields) are writable only by the service role: a `BEFORE UPDATE` trigger blocks any end-user session from changing them, even if a permissive policy is ever added.
 - GA env (`GA_MEASUREMENT_ID`, `GA_MP_API_SECRET`) is passed through Turbo so the server-side GA4 events fire in production.
-
-### Security
-
-#### Web app (`apps/web`)
-
 - **Anonymous email-takeover closed (critical)**: email confirmations are now enforced (`enable_confirmations = true`), so the anonymous→permanent upgrade must verify the new email from its real inbox — the checkout signup shows a "confirm your email" step and proceeds to payment only after the link is followed. An anonymous session can no longer claim a victim's confirmed email and accept that email's workspace invitations; anonymous principals are also rejected from all four invite paths and from API-key creation. **The hosted Supabase project must mirror `enable_confirmations` in its dashboard.**
 - **Open redirect closed**: the auth callback and login form route post-login through a shared `safeNext` guard, so a crafted `?next` / `?redirect` (external, protocol-relative `//evil.tld`, or backslash `/\evil.tld`) falls back to `/dashboard` instead of redirecting off-site.
 - **Proxy relay hardened** (`/api/proxy`): the same-site check now matches the host exactly, so a look-alike `http://localhost.evil.tld` no longer passes; a deploy that keeps the placeholder `PROXY_TOKEN_SECRET` fails closed in production.
@@ -163,19 +118,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Self-hosted trusted-proxy gate**: `TRUST_PROXY_HEADERS=false` makes `clientIp` ignore spoofable forwarding headers for deployments without a trusted reverse proxy.
 - **No anonymous relay token**: `/api/scan` no longer returns a `proxyToken` (it was unused — each report page issues its own scoped token server-side), so the deep-scan relay token can no longer be obtained anonymously.
 - **CSP drops `unsafe-eval`**: removed the unused `unsafe-eval` from the (report-only) `script-src`, shrinking the surface a future XSS could abuse.
-
-#### GitHub Action — fix PR (`fix-action`)
-
-- **Pathspec-magic hardening**: the staging step uses `git --literal-pathspecs`, and the agent sandbox rejects writing a file whose path starts with `:`, so a prompt-injected agent can't widen the committed file set via git pathspec magic.
+- **Pathspec-magic hardening**: the fix-PR staging step uses `git --literal-pathspecs`, and the agent sandbox rejects writing a file whose path starts with `:`, so a prompt-injected agent can't widen the committed file set via git pathspec magic.
 - **Wider secret redaction**: `redactSecrets` now also masks connection-string passwords (`scheme://user:pass@host`) and more credential keywords (CRED, SIGNING_KEY, OAUTH, DSN, …) before file content reaches the model.
-- **Git hooks neutralized during commit/push**: the PR step runs `git` with `core.hooksPath=/dev/null` and `--no-verify`, so a poisoned repo's hooks can't execute with `GH_TOKEN` in the environment.
-
-#### Scanner engine (`@isreadyai/scanner`)
-
+- **Git hooks neutralized during commit/push**: the fix-PR step runs `git` with `core.hooksPath=/dev/null` and `--no-verify`, so a poisoned repo's hooks can't execute with `GH_TOKEN` in the environment.
 - **ReDoS fixed in robots matching**: `pathMatches` uses a linear, non-backtracking glob matcher, so a crafted `robots.txt` path rule can no longer stall the scanner.
-
-#### Supabase package (`@isreadyai/supabase`)
-
 - **Rate-limit functions locked to the service role**: revoked `EXECUTE` on `consume_rate_limit` and `consume_metered_run` from `anon` / `authenticated` / `PUBLIC` — the app only ever calls them through the service role — closing an unauthenticated path to saturate a shared rate-limit bucket (e.g. `contact:global`) and deny every rate-limited endpoint. Added a pgTAP regression.
 - **Workspace always keeps an owner**: a deferred constraint trigger (`workspace_owner_guard`) prevents removing, demoting or suspending the last active owner, closing the race where two concurrent removals could orphan a workspace. Added a pgTAP regression.
 - **Tightened auth redirect allowlist**: dropped the shared `https://*.vercel.app/auth/callback` wildcard from the local `config.toml` (preview/production redirect URLs are configured in the Supabase dashboard).
@@ -184,8 +130,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-06-15
 
 ### Added
-
-#### Scanner engine (`@isreadyai/scanner`)
 
 - Core scan engine with weighted scoring across five categories: Crawler Access (25%), Structured Data (30%), GEO Content (15%), Rendering (20%), and Trust & Security (10%).
 - Overall score (0–100) with four grades: excellent, good, moderate, poor. Score methodology versioned (`SCORE_VERSION`) for reproducible comparisons.
@@ -201,18 +145,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deterministic fix-plan generator (`generateFixPlan`) that emits whole-file patches for mechanical fixes (robots.txt allow-groups, `llms.txt` scaffold) and a structured Markdown plan for everything else. AI-generated fix plans are a planned future feature; v1 is entirely deterministic.
 - Zod-validated `validateScanInput` boundary for all external URL input.
 - Shared TypeScript types and test utilities exported from the package root.
-
-#### CLI (`isreadyai`)
-
 - `isreadyai <url>` command: scans a URL and prints a coloured, scored report to stdout with a `@clack/prompts` spinner on stderr so stdout stays pipeable.
 - Output mode flags: `--json` (raw `IScanReport`), `--md` (human-readable Markdown), `--llm` (fix plan for pasting into Claude Code or Cursor), `--quiet`/`-q` (score line only).
 - `--deep` flag: crawls the full site via sitemap and link discovery, runs page-level checks on each page; `--limit <n>` and `--skip <n>` control crawl bounds.
 - `--smart-ai` flag: adds Smart Agent Readability using the local agent-browser executor without affecting the standard score or CI exit code.
 - Exit codes: 0 when score >= 50, 1 when below threshold or scan failed, 2 on misuse.
 - `--version` and `--help` flags.
-
-#### Web app (`apps/web`)
-
 - Public landing page with live scanner: paste any URL, get a scored report in the browser with no account required.
 - Shareable report pages at `/report/[id]` with full check results, category breakdown, animated score ring, and per-finding evidence and fix hints.
 - Deep Scan in the browser: crawl up to the environment-configured page limit with the engine running client-side and fetches relayed through a dumb proxy; free for all users.
@@ -225,21 +163,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Embeddable README badge at `/badge/[domain](.svg)`: live score badge served via edge with CDN caching; signed-token-gated to Pro/Team API keys.
 - Report by email (Resend): PDF and Markdown attachments, email-gated downloads.
 - Check categories linked to anchored technical FAQs with audit methods and score-methodology source references.
-
-#### GitHub Action (`action.yml`)
-
 - Composite workflow action that installs the scanner, runs `isreadyai --json` against a target URL, writes a scored Markdown report to the job summary, and fails the step when the score drops below a configurable threshold (default 70). Outputs `score` and `grade`. The Action is included in this repository but not yet published to the GitHub Marketplace.
-
-#### Supabase package (`@isreadyai/supabase`)
-
 - Shared generated database types and typed Supabase client helpers used by the web app.
-
-#### Monorepo infrastructure
-
 - Turborepo pipeline with Bun as runtime and package manager.
 - CI: lint (`oxlint`), format check (`oxfmt`), type-check, tests, and build.
 
-[Unreleased]: https://github.com/isreadyai/isreadyai/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/isreadyai/isreadyai/compare/v1.0.6...HEAD
+[1.0.6]: https://github.com/isreadyai/isreadyai/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/isreadyai/isreadyai/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/isreadyai/isreadyai/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/isreadyai/isreadyai/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/isreadyai/isreadyai/compare/v0.2.1...v1.0.2

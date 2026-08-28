@@ -4,6 +4,7 @@ import { requireSuccess } from '@/lib/db'
 import { EPlan, planOrFree } from '@/lib/plans'
 import type { TPlan } from '@/lib/plans'
 import { getStripe, isStripeConfigured } from '@/lib/stripe'
+import { invoiceSubscriptionId, subscriptionPeriodEnd } from '@/lib/stripe-objects'
 import { higherPlan, planFromPrice, planFromStatus, planRank } from '@/lib/stripe-plan'
 import { sendGaEvent } from '@/lib/analytics-server'
 
@@ -123,30 +124,27 @@ async function handleEvent(
     // stored status/period/payment-method stay current.
     // FOLLOWUP: emit a "trial ending" notification on trial_will_end once the
     // notifications table is wired by a later wave.
-    await syncSubscription(stripe, service, event.data.object)
+    // Re-fetched under the SDK's pinned API version: the event payload follows
+    // the webhook endpoint's version, so its shape may lag the types.
+    const subscription = await retrieveSubscription(stripe, event.data.object.id)
+    await syncSubscription(stripe, service, subscription)
     return
   }
   if (event.type === 'invoice.payment_failed' || event.type === 'invoice.payment_succeeded') {
     // payment_failed never downgrades the plan (planFromStatus keeps the plan
     // on past_due); payment_succeeded restores active. Both re-sync from the
-    // canonical subscription so status reflects reality. The subscription id
-    // can be absent on one-off invoices, so guard for it.
-    const subscriptionId = invoiceSubscriptionId(event.data.object)
+    // canonical subscription so status reflects reality. The invoice is
+    // re-fetched under the pinned API version; the subscription id lives under
+    // `parent.subscription_details` and is absent on one-off invoices, so guard
+    // for it.
+    const invoice = await stripe.invoices.retrieve(event.data.object.id)
+    const subscriptionId = invoiceSubscriptionId(invoice)
     if (subscriptionId === null) {
       return
     }
     const subscription = await retrieveSubscription(stripe, subscriptionId)
     await syncSubscription(stripe, service, subscription)
   }
-}
-
-/** Reads the subscription id off an invoice regardless of expansion state. */
-function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
-  const subscription = invoice.subscription
-  if (subscription === null || subscription === undefined) {
-    return null
-  }
-  return typeof subscription === 'string' ? subscription : subscription.id
 }
 
 /** Retrieves a subscription with the default payment method expanded. */
@@ -183,7 +181,7 @@ async function syncSubscription(
   // arrived last. A higher plan set to cancel_at_period_end is still `active`
   // here, so it keeps reading as that plan until the period actually ends.
   const nextPlan = await highestActivePlan(stripe, customerId, fromThisSub)
-  const periodEnd = subscription.current_period_end ?? null
+  const periodEnd = subscriptionPeriodEnd(subscription)
   const card = await resolveCard(stripe, subscription, customerId)
 
   // These two writes carry the entitlement change. Their errors MUST surface: a

@@ -44,7 +44,7 @@ export async function generateAiFixPlan(report: IScanReport): Promise<string | n
         'http-referer': process.env.NEXT_PUBLIC_SITE_URL ?? 'https://isready.ai',
         'x-title': 'isready.ai fix plan',
       },
-      system: SYSTEM,
+      instructions: SYSTEM,
       prompt: `Site: ${host} — overall ${report.overall}/100 (${report.grade}).\n\nScan findings:\n${findings}\n\nWrite the tailored fix plan.`,
     })
     const plan = text.trim()

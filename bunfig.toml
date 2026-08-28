@@ -1,0 +1,6 @@
+# Hoisted, in-repo layout: Next/Turbopack resolves HeroUI's and react-aria's
+# transitive packages from the workspace root, and TypeScript reaches
+# @types/react from library declaration files. The isolated linker (and the
+# global virtual store) break both.
+[install]
+linker = "hoisted"
