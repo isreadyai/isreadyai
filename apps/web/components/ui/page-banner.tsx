@@ -1,21 +1,12 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import type { TPageBannerSeverity } from '@/components/ui/severity'
+import { EPageBannerSeverity } from '@/components/ui/severity'
 
 // MARK: - PageBanner (workspace/account-wide, persistent — Atlassian banner)
 
-/**
- * Workspace-wide persistent banner (account/workspace-wide, never auto-dismisses).
- * Severity maps to intent colors: critical→danger, warning→warning, success→site-accent, info→site-secondary.
- */
-export const EPageBannerSeverity = {
-  INFO: 'info',
-  WARNING: 'warning',
-  CRITICAL: 'critical',
-  SUCCESS: 'success',
-} as const
-export type TPageBannerSeverity = (typeof EPageBannerSeverity)[keyof typeof EPageBannerSeverity]
-
+/** Severity maps to intent colors: critical→danger, warning→warning, success→site-accent, info→site-secondary. */
 const SEVERITY: Record<
   TPageBannerSeverity,
   { surface: string; accent: string; role: 'alert' | 'status' }

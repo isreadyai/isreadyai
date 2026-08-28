@@ -1,6 +1,6 @@
 'use client'
 
-import type { TPageBannerSeverity } from '@/components/ui/page-banner'
+import type { TPageBannerSeverity } from '@/components/ui/severity'
 import type { TBillingCta, TSubscriptionSeverity, TSubscriptionUiState } from '@/lib/subscription'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'

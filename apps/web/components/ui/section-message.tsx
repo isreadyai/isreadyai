@@ -1,8 +1,9 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { TPageBannerSeverity } from '@/components/ui/page-banner'
-import { EPageBannerSeverity, SeverityIcon } from '@/components/ui/page-banner'
+import type { TSectionMessageSeverity } from '@/components/ui/severity'
+import { EPageBannerSeverity } from '@/components/ui/severity'
+import { SeverityIcon } from '@/components/ui/page-banner'
 
 // MARK: - SectionMessage (local to a page region — Atlassian section message)
 
@@ -11,9 +12,6 @@ import { EPageBannerSeverity, SeverityIcon } from '@/components/ui/page-banner'
  * region rather than spanning the workspace, so it reads as contextual rather
  * than account-wide. Tinted left rail instead of a full surface fill.
  */
-
-export const ESectionMessageSeverity = EPageBannerSeverity
-export type TSectionMessageSeverity = TPageBannerSeverity
 
 const ACCENT: Record<
   TSectionMessageSeverity,
