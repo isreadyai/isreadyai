@@ -1,42 +1,30 @@
-<a id="readme-top"></a>
-
-<div align="center">
+<p align="center">
   <a href="https://isready.ai">
-    <img src="https://isready.ai/icon.svg" alt="isready.ai logo" width="96">
+    <img src="https://isready.ai/icon.svg" alt="isready.ai" width="96" />
   </a>
+</p>
 
-  <h1 align="center">isready.ai — AI readiness audit</h1>
+<h1 align="center">isready.ai — AI readiness audit</h1>
 
-  <p align="center">
-    Gate your deploys on whether AI crawlers can actually read your site.
-    <br />
-    Deep-crawls the URL, writes the full report to the job summary, and
-    <strong>fails the step</strong> when the score drops below your threshold.
-  </p>
+<p align="center">
+  <strong>Gate your deploys on whether AI crawlers can actually read your site</strong><br />
+  Deep-crawls the URL, writes the full report to the job summary, and <strong>fails the step</strong> when the score drops below your threshold
+</p>
 
-  <p align="center">
-    <a href="https://github.com/marketplace/actions/isreadyai-ai-readiness-audit"><img src="https://img.shields.io/badge/Marketplace-audit--action-2ea44f?logo=githubactions&logoColor=white" alt="GitHub Marketplace"></a>
-    <a href="https://github.com/isreadyai/audit-action/actions"><img src="https://img.shields.io/github/actions/workflow/status/isreadyai/audit-action/ci.yml?label=ci" alt="CI"></a>
-    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
-    <a href="https://isready.ai"><img src="https://img.shields.io/badge/isready.ai-website-000000?logo=data:image/svg+xml;base64," alt="isready.ai"></a>
-  </p>
-</div>
+<p align="center">
+  <a href="https://github.com/marketplace/actions/isreadyai-ai-readiness-audit"><img src="https://img.shields.io/badge/Marketplace-audit--action-2ea44f?style=flat-square&logo=githubactions&logoColor=white" alt="GitHub Marketplace" /></a>
+  <a href="https://github.com/isreadyai/audit-action/actions"><img src="https://img.shields.io/github/actions/workflow/status/isreadyai/audit-action/ci.yml?style=flat-square&label=ci" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /></a>
+  <a href="https://isready.ai"><img src="https://img.shields.io/badge/Live-isready.ai-000000?style=flat-square" alt="isready.ai" /></a>
+</p>
 
----
-
-## Contents
-
-- [What it does](#what-it-does)
-- [Usage](#usage)
-- [Workflow permissions](#workflow-permissions)
-- [Inputs](#inputs)
-- [Outputs](#outputs)
-- [Examples](#examples)
-- [Security](#security)
-- [Privacy & telemetry](#privacy--telemetry)
-- [Versioning & pinning](#versioning--pinning)
-- [How it works](#how-it-works)
-- [License](#license)
+<p align="center">
+  <a href="#what-it-does">What it does</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="#inputs">Inputs</a> ·
+  <a href="#examples">Examples</a> ·
+  <a href="#how-it-works">How it works</a>
+</p>
 
 ---
 
@@ -219,8 +207,15 @@ so please **open issues and PRs there**, not against the generated files here.
 Learn more at **[isready.ai](https://isready.ai)** and read about the scoring
 methodology in the [monorepo README](https://github.com/isreadyai/isreadyai#the-score).
 
+## Author
+
+<p>
+  <a href="https://x.com/massimodeluisa"><img src="https://img.shields.io/badge/X-@massimodeluisa-000000?style=flat-square&logo=x" alt="X" /></a>
+  <a href="https://github.com/isreadyai"><img src="https://img.shields.io/badge/GitHub-isreadyai-181717?style=flat-square&logo=github" alt="GitHub" /></a>
+</p>
+
+**Smart Squad S.r.l.**: [smartsquad.io](https://smartsquad.io) · [isready.ai](https://isready.ai)
+
 ## License
 
-[MIT](./LICENSE) — © Smart Squad S.r.l. ([smartsquad.io](https://smartsquad.io)).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+MIT, see [LICENSE](LICENSE). © Smart Squad S.r.l.
