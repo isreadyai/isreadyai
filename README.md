@@ -55,13 +55,9 @@ navigation. The standard crawler score remains unchanged.
 
 AI assistants are becoming a primary discovery channel, and the rules differ from classic SEO in ways that are invisible until you measure them. One header can hide you from ChatGPT while Google still ranks you. This project makes those failures visible, explainable and fixable — and the scanner is fully open source.
 
-
-
 ### Built With
 
 [![Turborepo][Turborepo]][Turborepo-url] [![Bun][Bun]][Bun-url] [![TypeScript][TypeScript]][TypeScript-url] [![Next.js][Next.js]][Next-url] [![React][React]][React-url] [![HeroUI][HeroUI]][HeroUI-url] [![Tailwind CSS][Tailwind]][Tailwind-url] [![Supabase][Supabase]][Supabase-url] [![Vercel][Vercel]][Vercel-url]
-
-
 
 ### Repository Layout
 
@@ -76,8 +72,6 @@ The standard web scan is **zero-config**: with no environment variables it
 stores scans in memory and works locally. Add agent-browser for local Smart
 Agent audits, Supabase keys for persistence, a Resend key for emailed reports,
 and AI Gateway credentials for Ask your site.
-
-
 
 ## Getting Started
 
@@ -133,8 +127,6 @@ fill only the integrations you want:
 
 `NEXT_PUBLIC_SITE_URL` and the Supabase config default to `http://localhost:3300`
 for local dev. See [`.env.example`](./.env.example) for every variable.
-
-
 
 ## Usage
 
@@ -299,8 +291,6 @@ const report = await scan('example.com', {
 console.log(report.overall, report.grade)
 ```
 
-
-
 ## The Score
 
 Weighted 0–100 across five dimensions (`scoreVersion` is embedded in every report so methodology can evolve without silently re-grading old scans):
@@ -314,8 +304,6 @@ Weighted 0–100 across five dimensions (`scoreVersion` is embedded in every rep
 | Trust           |    10% | HTTPS, TLS, HSTS, mixed content                                      |
 
 Informational signals (`llms.txt`, robots.txt Content Signals) are reported on every scan but never scored — no major AI provider consumes them today.
-
-
 
 ## Roadmap
 
@@ -342,8 +330,6 @@ Informational signals (`llms.txt`, robots.txt Content Signals) are reported on e
 - [ ] Two-factor authentication — TOTP authenticator app (Supabase-native MFA)
 
 See [open issues](https://github.com/isreadyai/isreadyai/issues) for the full list.
-
-
 
 ## Contributing
 
@@ -374,8 +360,6 @@ Adding a scanner check, in short:
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full setup and recipe walkthrough.
 Engineering and UI conventions are documented in [`CONVENTIONS.md`](./CONVENTIONS.md).
-
-
 
 ## Acknowledgements
 
@@ -433,8 +417,6 @@ And a nod to the **README template** by [othneildrew](https://github.com/othneil
 
 A live, linked version of these thanks lives at
 [isready.ai/acknowledgements](https://isready.ai/acknowledgements).
-
-
 
 ## Author
 
