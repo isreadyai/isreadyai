@@ -8,6 +8,10 @@ import { fileURLToPath } from 'node:url'
  * The product README lives at the monorepo root, so pack/publish copy it here
  * and rewrite repo-relative URLs to GitHub so images and file links resolve
  * on npmjs.com (the tarball does not include the rest of the repo).
+ *
+ * Cleanup must be `postpublish`, not `postpack`: npm publish re-reads the
+ * manifest after packing and that pass is what the registry stores. Deleting
+ * the staged README in postpack leaves the tarball correct but npmjs.com empty.
  */
 
 const CLI_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')

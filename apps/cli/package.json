@@ -27,7 +27,7 @@
     "build": "bun run scripts/build.ts",
     "clean": "rm -rf .turbo .next .expo dist coverage *.tsbuildinfo",
     "prepack": "bun run scripts/pack-readme.ts",
-    "postpack": "bun run scripts/pack-readme.ts --clean",
+    "postpublish": "bun run scripts/pack-readme.ts --clean",
     "test": "bun test",
     "type-check": "tsc --noEmit"
   },

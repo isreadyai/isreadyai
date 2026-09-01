@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Kept the staged CLI README on disk until after npm publish so the registry stores it for npmjs.com.
+
 ## [1.1.3] - 2026-09-01
 
 ### Fixed
