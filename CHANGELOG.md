@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Bumped the dompurify, postcss, nanoid and undici overrides past the audited advisories so CI's `bun audit` passes.
+
 ## [1.1.4] - 2026-09-01
 
 ### Fixed
