@@ -1,58 +1,37 @@
-<a id="readme-top"></a>
-
-<!-- PROJECT LOGO -->
-<br />
-<div align="center">
+<p align="center">
   <a href="https://isready.ai">
-    <img src="apps/web/app/icon.svg" alt="isready.ai logo" width="120">
+    <img src="apps/web/app/icon.svg" alt="isready.ai" width="120" />
   </a>
+</p>
 
-<h3 align="center">isready.ai</h3>
+<h1 align="center">isready.ai</h1>
 
-  <p align="center">
-    Is your website <strong>ready for AI</strong>? A free audit — powered by an open-source (MIT) engine and CLI — that checks whether a site or SaaS is readable, crawlable and optimized for ChatGPT, Claude, Perplexity, Gemini and every AI search engine.
-    <br />
-    <br />
-    <a href="https://isready.ai">Website</a>
-    &middot;
-    <a href="#usage">CLI</a>
-    &middot;
-    <a href="https://github.com/isreadyai/isreadyai/issues/new?labels=bug">Report Bug</a>
-    &middot;
-    <a href="https://github.com/isreadyai/isreadyai/issues/new?labels=enhancement">Request Feature</a>
-  </p>
-</div>
+<p align="center">
+  <strong>Is your website ready for AI?</strong><br />
+  A free audit — powered by an open-source (MIT) engine and CLI — that checks whether a site or SaaS is readable, crawlable and optimized for ChatGPT, Claude, Perplexity, Gemini and every AI search engine
+</p>
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#why">Why</a></li>
-        <li><a href="#built-with">Built With</a></li>
-        <li><a href="#repository-layout">Repository Layout</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#the-score">The Score</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#acknowledgements">Acknowledgements</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-  </ol>
-</details>
+<p align="center">
+  <a href="https://isready.ai"><img src="https://img.shields.io/badge/Live-isready.ai-000000?style=flat-square" alt="Live site" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT_scanner-green?style=flat-square" alt="Scanner MIT, dashboard Shield" /></a>
+  <a href="https://www.npmjs.com/package/isreadyai"><img src="https://img.shields.io/npm/v/isreadyai?style=flat-square&label=npx%20isreadyai" alt="npm" /></a>
+  <a href="https://github.com/isreadyai/isreadyai"><img src="https://img.shields.io/github/stars/isreadyai/isreadyai?style=flat-square" alt="GitHub stars" /></a>
+</p>
 
-<!-- ABOUT THE PROJECT -->
+<p align="center">
+  <a href="#about-the-project">About</a> ·
+  <a href="#getting-started">Install</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="#the-score">Score</a> ·
+  <a href="#contributing">Contributing</a> ·
+  <a href="#license">License</a>
+</p>
+
+<p align="center">
+  <img src="https://isready.ai/opengraph-image" alt="isready.ai: is your website ready for AI?" width="800" />
+</p>
+
+---
 
 ## About The Project
 
@@ -76,13 +55,13 @@ navigation. The standard crawler score remains unchanged.
 
 AI assistants are becoming a primary discovery channel, and the rules differ from classic SEO in ways that are invisible until you measure them. One header can hide you from ChatGPT while Google still ranks you. This project makes those failures visible, explainable and fixable — and the scanner is fully open source.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 ### Built With
 
 [![Turborepo][Turborepo]][Turborepo-url] [![Bun][Bun]][Bun-url] [![TypeScript][TypeScript]][TypeScript-url] [![Next.js][Next.js]][Next-url] [![React][React]][React-url] [![HeroUI][HeroUI]][HeroUI-url] [![Tailwind CSS][Tailwind]][Tailwind-url] [![Supabase][Supabase]][Supabase-url] [![Vercel][Vercel]][Vercel-url]
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 ### Repository Layout
 
@@ -98,9 +77,7 @@ stores scans in memory and works locally. Add agent-browser for local Smart
 Agent audits, Supabase keys for persistence, a Resend key for emailed reports,
 and AI Gateway credentials for Ask your site.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- GETTING STARTED -->
 
 ## Getting Started
 
@@ -157,9 +134,7 @@ fill only the integrations you want:
 `NEXT_PUBLIC_SITE_URL` and the Supabase config default to `http://localhost:3300`
 for local dev. See [`.env.example`](./.env.example) for every variable.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- USAGE -->
 
 ## Usage
 
@@ -324,9 +299,7 @@ const report = await scan('example.com', {
 console.log(report.overall, report.grade)
 ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- SCORE -->
 
 ## The Score
 
@@ -342,9 +315,7 @@ Weighted 0–100 across five dimensions (`scoreVersion` is embedded in every rep
 
 Informational signals (`llms.txt`, robots.txt Content Signals) are reported on every scan but never scored — no major AI provider consumes them today.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- ROADMAP -->
 
 ## Roadmap
 
@@ -372,9 +343,7 @@ Informational signals (`llms.txt`, robots.txt Content Signals) are reported on e
 
 See [open issues](https://github.com/isreadyai/isreadyai/issues) for the full list.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- CONTRIBUTING -->
 
 ## Contributing
 
@@ -406,9 +375,7 @@ Adding a scanner check, in short:
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full setup and recipe walkthrough.
 Engineering and UI conventions are documented in [`CONVENTIONS.md`](./CONVENTIONS.md).
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- ACKNOWLEDGEMENTS -->
 
 ## Acknowledgements
 
@@ -467,55 +434,39 @@ And a nod to the **README template** by [othneildrew](https://github.com/othneil
 A live, linked version of these thanks lives at
 [isready.ai/acknowledgements](https://isready.ai/acknowledgements).
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- LICENSE -->
+
+## Author
+
+<p>
+  <a href="https://x.com/massimodeluisa"><img src="https://img.shields.io/badge/X-@massimodeluisa-000000?style=flat-square&logo=x" alt="X" /></a>
+  <a href="https://github.com/isreadyai"><img src="https://img.shields.io/badge/GitHub-isreadyai-181717?style=flat-square&logo=github" alt="GitHub" /></a>
+</p>
+
+**Smart Squad S.r.l.**: [smartsquad.io](https://smartsquad.io) · [isready.ai](https://isready.ai) · [contact](https://isready.ai/contact)
 
 ## License
 
-© 2026 Smart Squad S.r.l. ([smartsquad.io](https://smartsquad.io)). This
-repository is dual-licensed by area:
+© 2026 Smart Squad S.r.l. Dual-licensed by area, see [LICENSE](LICENSE) and [NOTICE](NOTICE):
 
-- **Open engine — MIT.** `packages/scanner` and `apps/cli` are open source
-  under the MIT License.
-- **Dashboard — PolyForm Shield 1.0.0.** `apps/web` and `packages/supabase`
-  are source-available but not open source: you may not use them to build a
-  product that competes with isready.ai.
+- **Open engine — MIT.** `packages/scanner` and `apps/cli`.
+- **Dashboard — PolyForm Shield 1.0.0.** `apps/web` and `packages/supabase` are source-available; you may not use them to build a product that competes with isready.ai.
 
-Each directory ships its own `LICENSE` with the authoritative terms. See the
-root [`LICENSE`](./LICENSE) for the map and [`NOTICE`](./NOTICE) for ownership.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- CONTACT -->
-
-## Contact
-
-Smart Squad Srl — [smartsquad.io](https://smartsquad.io)
-
-Project: [https://isready.ai](https://isready.ai) · [https://github.com/isreadyai/isreadyai](https://github.com/isreadyai/isreadyai)
-
-Contact: [https://isready.ai/contact](https://isready.ai/contact)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- MARKDOWN LINKS & IMAGES -->
-
-[Turborepo]: https://img.shields.io/badge/Turborepo-EF4444?style=for-the-badge&logo=turborepo&logoColor=white
+[Turborepo]: https://img.shields.io/badge/Turborepo-EF4444?style=flat-square&logo=turborepo&logoColor=white
 [Turborepo-url]: https://turborepo.com/
-[Bun]: https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white
+[Bun]: https://img.shields.io/badge/Bun-000000?style=flat-square&logo=bun&logoColor=white
 [Bun-url]: https://bun.com/
-[TypeScript]: https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white
+[TypeScript]: https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white
 [TypeScript-url]: https://www.typescriptlang.org/
-[Next.js]: https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
+[Next.js]: https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white
 [Next-url]: https://nextjs.org/
-[React]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
+[React]: https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB
 [React-url]: https://react.dev/
-[HeroUI]: https://img.shields.io/badge/HeroUI%203-7C3AED?style=for-the-badge
+[HeroUI]: https://img.shields.io/badge/HeroUI%203-7C3AED?style=flat-square
 [HeroUI-url]: https://heroui.com/
-[Tailwind]: https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white
+[Tailwind]: https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white
 [Tailwind-url]: https://tailwindcss.com/
-[Supabase]: https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white
+[Supabase]: https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white
 [Supabase-url]: https://supabase.com/
-[Vercel]: https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white
+[Vercel]: https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white
 [Vercel-url]: https://vercel.com/
