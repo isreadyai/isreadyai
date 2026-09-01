@@ -10,6 +10,9 @@ dist-actions/
 out
 *.tsbuildinfo
 
+# Staged from the repo-root README during npm pack/publish
+/apps/cli/README.md
+
 # Turbo
 .turbo
 

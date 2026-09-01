@@ -15,7 +15,9 @@
     "isreadyai": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "type": "module",
   "publishConfig": {
@@ -24,6 +26,8 @@
   "scripts": {
     "build": "bun run scripts/build.ts",
     "clean": "rm -rf .turbo .next .expo dist coverage *.tsbuildinfo",
+    "prepack": "bun run scripts/pack-readme.ts",
+    "postpack": "bun run scripts/pack-readme.ts --clean",
     "test": "bun test",
     "type-check": "tsc --noEmit"
   },

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Included the package README in the CLI npm tarball so the listing on npmjs.com renders it.
+
 ## [1.1.1] - 2026-08-28
 
 ### Fixed
