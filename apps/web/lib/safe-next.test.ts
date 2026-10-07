@@ -16,6 +16,16 @@ describe('safeNext', () => {
     expect(safeNext('/\\evil.tld')).toBe('/dashboard')
   })
 
+  test('rejects control characters, backslashes and decoded tabs', () => {
+    expect(safeNext('/\t/evil.tld')).toBe('/dashboard')
+    expect(safeNext('/\n/evil.tld')).toBe('/dashboard')
+    expect(safeNext('/\r/evil.tld')).toBe('/dashboard')
+    expect(safeNext('/\t\\evil.tld')).toBe('/dashboard')
+    expect(safeNext('/ok\\path')).toBe('/dashboard')
+    expect(safeNext('/a\u007f/b')).toBe('/dashboard')
+    expect(safeNext(new URLSearchParams('next=/%09/evil.tld').get('next'))).toBe('/dashboard')
+  })
+
   test('rejects absolute and scheme URLs', () => {
     expect(safeNext('https://evil.tld')).toBe('/dashboard')
     expect(safeNext('http://localhost.evil.tld')).toBe('/dashboard')
