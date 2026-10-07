@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - www.isready.ai now 301s to https://isready.ai once the host reaches the app.
+- Transactional and auth emails now follow the light or dark color scheme.
 
 ## [1.1.4] - 2026-09-01
 

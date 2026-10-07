@@ -43,9 +43,9 @@ export function fixPrEmailHtml(data: { repo: string; prUrl: string; patches: num
   const repo = escapeHtml(data.repo)
   const prUrl = escapeHtml(data.prUrl)
   return emailShell(`<h1 style="font-size:20px;margin:16px 0 8px">AI-readiness fixes ready to review</h1>
-      <p style="font-size:14px;line-height:1.6;color:#9a9a92">The isready.ai fix agent applied ${count} to <strong style="color:#ececea">${repo}</strong> and opened a pull request for your review.</p>
+      <p class="ir-muted" style="font-size:14px;line-height:1.6;color:#9a9a92">The isready.ai fix agent applied ${count} to <strong class="ir-text" style="color:#ececea">${repo}</strong> and opened a pull request for your review.</p>
       <p style="margin:24px 0">
         <a href="${prUrl}" style="display:inline-block;background:#b8f53d;color:#161613;font-weight:600;text-decoration:none;padding:12px 20px;border-radius:10px;font-size:14px">View the pull request</a>
       </p>
-      <p style="font-size:12px;color:#6b6b64">The agent ran inside your CI runner; only the file snippets it opened were sent for inference, and were not stored by isready.ai.</p>`)
+      <p class="ir-faint" style="font-size:12px;color:#6b6b64">The agent ran inside your CI runner; only the file snippets it opened were sent for inference, and were not stored by isready.ai.</p>`)
 }
