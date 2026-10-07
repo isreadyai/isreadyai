@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bring-your-own model defaults now use grok-4.7, gpt-5.4-mini, gemini-3.5-flash and claude-sonnet-5-5.
 - Updated Next.js to 16.4.0, HeroUI to 3.2.6, and the AI SDK packages to their current 4.x and 7.x patches.
 
+### Fixed
+
+- Formatted the Supabase auth email templates so the oxfmt check passes.
+
 ### Security
 
 - Raised the dompurify, postcss, undici, sharp, source-map-js, tinypool and baseline-browser-mapping overrides so `bun audit` passes.
