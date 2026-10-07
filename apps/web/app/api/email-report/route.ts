@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { clientIp } from '@/lib/client-ip'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 import { getScanStore } from '@/lib/scan-store'
 import { emailConfigured, saveLead, sendReportEmail } from '@/lib/email-report'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -70,7 +70,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // Cheap per-IP gate first; the shared GLOBAL bucket is consumed only after a
   // valid captcha (below), so unsolved requests can't drain it and DoS everyone.
   const ip = clientIp(request)
-  if (!(await consumeRateLimit(ip, RATE_WINDOW_MS, RATE_LIMIT))) {
+  if (!(await consumeRateLimit(ERateLimitScope.EMAIL_REPORT, ip, RATE_WINDOW_MS, RATE_LIMIT))) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
@@ -103,7 +103,14 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   // Bounds total Resend spend; consumed only now that the request is
   // captcha-cleared and authorized, so abuse can't drain it before a real send.
-  if (!(await consumeRateLimit('email-report:global', RATE_WINDOW_MS, GLOBAL_LIMIT))) {
+  if (
+    !(await consumeRateLimit(
+      ERateLimitScope.EMAIL_REPORT_GLOBAL,
+      'all',
+      RATE_WINDOW_MS,
+      GLOBAL_LIMIT,
+    ))
+  ) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 

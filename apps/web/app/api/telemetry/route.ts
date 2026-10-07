@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient, isSupabaseConfigured } from '@isreadyai/supabase'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 import { clientIp } from '@/lib/client-ip'
 
 // MARK: - POST /api/telemetry
@@ -33,7 +33,7 @@ const BodySchema = z.object({
 
 export async function POST(request: Request): Promise<NextResponse> {
   const ipHash = await hashValue(clientIp(request))
-  if (!(await consumeRateLimit(ipHash, RATE_WINDOW_MS, RATE_LIMIT))) {
+  if (!(await consumeRateLimit(ERateLimitScope.TELEMETRY, ipHash, RATE_WINDOW_MS, RATE_LIMIT))) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
