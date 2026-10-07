@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added a Cloudflare checklist for the missing `www.isready.ai` DNS record.
+- Added a homepage table of the five scored dimension weights.
+- Added `/llms-full.txt` and expanded `/llms.txt` into llmstxt.org file lists.
+- Listed every scanner AI crawler user-agent in robots.txt.
 
 ### Changed
 

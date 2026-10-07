@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { AI_CRAWLERS } from '@isreadyai/scanner'
 import { SITE_URL } from '@/lib/site'
 
 // MARK: - robots.txt (dogfood: every AI crawler explicitly welcome)
@@ -7,14 +8,11 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       { userAgent: '*', allow: '/', disallow: ['/api/'] },
-      { userAgent: 'GPTBot', allow: '/' },
-      { userAgent: 'OAI-SearchBot', allow: '/' },
-      { userAgent: 'ChatGPT-User', allow: '/' },
-      { userAgent: 'ClaudeBot', allow: '/' },
-      { userAgent: 'Claude-SearchBot', allow: '/' },
-      { userAgent: 'Claude-User', allow: '/' },
-      { userAgent: 'PerplexityBot', allow: '/' },
-      { userAgent: 'Google-Extended', allow: '/' },
+      ...AI_CRAWLERS.map((crawler) => ({
+        userAgent: crawler.token,
+        allow: '/',
+        disallow: ['/api/'],
+      })),
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
   }
