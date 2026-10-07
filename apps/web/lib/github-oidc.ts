@@ -46,10 +46,11 @@ export async function verifyGithubRepoOidc(
       algorithms: ['RS256'],
     })
     const repositoryId = claimString(payload.repository_id)
-    if (repositoryId === '' || repositoryId !== expectedRepositoryId) {
+    const ownerRepo = claimString(payload.repository)
+    if (repositoryId === '' || repositoryId !== expectedRepositoryId || ownerRepo === '') {
       return null
     }
-    return { repositoryId, ownerRepo: claimString(payload.repository) }
+    return { repositoryId, ownerRepo }
   } catch {
     return null
   }

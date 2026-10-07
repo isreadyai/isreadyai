@@ -35,6 +35,11 @@ describe('verifyGithubRepoOidc', () => {
     })
   })
 
+  test('rejects a token without a repository claim', async () => {
+    verifyImpl = async () => ({ payload: { repository_id: '123' } })
+    expect(await verifyGithubRepoOidc('tok', '123')).toBeNull()
+  })
+
   test('rejects an empty token without verifying', async () => {
     verifyImpl = async () => {
       throw new Error('jwtVerify must not be called for an empty token')
