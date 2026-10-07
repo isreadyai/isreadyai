@@ -1,6 +1,7 @@
 import path from 'node:path'
 import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
+import { APEX_HOST, WWW_HOST } from './lib/apex-host'
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
@@ -34,6 +35,19 @@ const nextConfig: NextConfig = {
       { source: '/terms', destination: '/terms-and-conditions', permanent: true },
       // Invite pages moved out of the gated /dashboard group; keep old email links working.
       { source: '/dashboard/invite/:token', destination: '/invite/:token', permanent: false },
+      // www is NXDOMAIN until Cloudflare has the CNAME. Once it resolves, one hop to the apex.
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: WWW_HOST }],
+        destination: `https://${APEX_HOST}/:path*`,
+        permanent: true,
+      },
+      {
+        source: '/',
+        has: [{ type: 'host', value: WWW_HOST }],
+        destination: `https://${APEX_HOST}/`,
+        permanent: true,
+      },
     ]
   },
   async headers() {

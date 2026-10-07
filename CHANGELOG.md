@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added a Cloudflare checklist for the missing `www.isready.ai` DNS record.
+
+### Changed
+
+- www.isready.ai now 301s to https://isready.ai once the host reaches the app.
+
 ## [1.1.4] - 2026-09-01
 
 ### Fixed
