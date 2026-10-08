@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Transactional and auth emails now follow the light or dark color scheme.
 - Bring-your-own model defaults now use grok-4.7, gpt-5.4-mini, gemini-3.5-flash and claude-sonnet-5-5.
 - Updated Next.js to 16.4.0, HeroUI to 3.2.6, and the AI SDK packages to their current 4.x and 7.x patches.
+- Updated React to 19.3, supabase-js to 2.117.2, the Supabase CLI to 2.120.0, zod to 4.6.5 and next-intl to 4.14.9.
 
 ### Fixed
 
