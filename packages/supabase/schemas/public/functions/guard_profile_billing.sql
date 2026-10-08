@@ -1,6 +1,7 @@
 CREATE OR REPLACE FUNCTION public.guard_profile_billing()
   RETURNS TRIGGER
   LANGUAGE plpgsql
+  SET search_path TO 'public'
   AS $function$
 begin
   if current_user in ('authenticated','anon') and (
@@ -18,4 +19,4 @@ begin
   return new;
 end; $function$;
 
-REVOKE ALL ON FUNCTION "public"."guard_profile_billing"() FROM "anon", "authenticated", "service_role";
+REVOKE ALL ON FUNCTION "public"."guard_profile_billing"() FROM PUBLIC, "anon", "authenticated", "service_role";

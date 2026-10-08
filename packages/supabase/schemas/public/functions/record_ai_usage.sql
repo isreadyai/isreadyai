@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION public.record_ai_usage (
 )
   RETURNS void
   LANGUAGE sql
+  SET search_path TO 'public'
   AS $function$
   insert into public.ai_usage (user_id, api_key_id, surface, period, generation_id, messages, tokens)
   values (p_user_id, p_api_key_id, p_surface, p_period, p_generation_id, p_messages, p_tokens)
