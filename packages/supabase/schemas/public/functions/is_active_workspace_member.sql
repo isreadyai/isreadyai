@@ -15,4 +15,6 @@ CREATE OR REPLACE FUNCTION public.is_active_workspace_member (
   );
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."is_active_workspace_member"(uuid) TO "anon", "authenticated", "service_role";
+GRANT EXECUTE ON FUNCTION "public"."is_active_workspace_member"(uuid) TO "authenticated", "service_role";
+
+REVOKE ALL ON FUNCTION "public"."is_active_workspace_member"(uuid) FROM PUBLIC, "anon";

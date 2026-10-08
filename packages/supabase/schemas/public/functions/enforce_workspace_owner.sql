@@ -25,4 +25,4 @@ begin
 end;
 $function$;
 
-REVOKE ALL ON FUNCTION "public"."enforce_workspace_owner"() FROM "anon", "authenticated", "service_role";
+REVOKE ALL ON FUNCTION "public"."enforce_workspace_owner"() FROM PUBLIC, "anon", "authenticated", "service_role";

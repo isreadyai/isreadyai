@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION public.consume_metered_run (
 )
   RETURNS uuid
   LANGUAGE plpgsql
+  SET search_path TO 'public'
   AS $function$
 declare
   v_workspace_id uuid;

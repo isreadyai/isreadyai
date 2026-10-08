@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION public.ai_usage_this_month (
   )
   LANGUAGE sql
   STABLE
+  SET search_path TO 'public'
   AS $function$
   select
     coalesce(sum(u.messages), 0)::bigint as messages,

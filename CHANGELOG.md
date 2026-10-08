@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gave each route its own rate-limit bucket, so deep-scan proxy calls no longer use up the report-email limit.
 - Enforced the solve token call budget in the shared rate-limit store and rejected tokens whose API key was revoked.
 - Stored the OIDC-verified `owner/repo` for CI reports instead of the uploaded value.
+- Pinned search_path on four database functions and revoked direct RPC execution of trigger functions and the workspace membership helper from anonymous callers.
 
 ## [1.1.4] - 2026-09-01
 
