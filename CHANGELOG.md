@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replaced the homepage checks-performed counter with live stats from each site's latest on-demand scan and added a grade-band explainer.
 - Probed the homepage as eight AI crawler user agents instead of GPTBot alone (score version 2026.10.1).
 - www.isready.ai now 301s to https://isready.ai once the host reaches the app.
 - Transactional and auth emails now follow the light or dark color scheme.

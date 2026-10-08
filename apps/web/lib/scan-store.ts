@@ -67,8 +67,6 @@ export interface IScanStore {
   delete(id: TScanRow['id']): Promise<void>
   /** Scans created by this ipHash within the window — durable rate limiting. */
   recentCountByIp(ipHash: NonNullable<TScanRow['ip_hash']>, windowMs: number): Promise<number>
-  /** Total completed scans — the basis for the cumulative "checks performed" stat. */
-  countCompletedScans(): Promise<number>
 }
 
 // MARK: - In-memory backend
@@ -146,15 +144,6 @@ const memoryStore: IScanStore = {
   recentCountByIp(ipHash: NonNullable<TScanRow['ip_hash']>, windowMs: number): Promise<number> {
     const since = Date.now() - windowMs
     return Promise.resolve((memoryIpLog.get(ipHash) ?? []).filter((t) => t > since).length)
-  },
-  countCompletedScans(): Promise<number> {
-    let done = 0
-    for (const record of memory.values()) {
-      if (record.status === EScanStatus.DONE) {
-        done += 1
-      }
-    }
-    return Promise.resolve(done)
   },
 }
 
@@ -283,13 +272,6 @@ async function createSupabaseStore(): Promise<IScanStore> {
         throw new Error(`scan rate-limit count failed: ${error?.message ?? 'null count'}`)
       }
       return count
-    },
-    async countCompletedScans(): Promise<number> {
-      const { count, error } = await client
-        .from('scans')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', EScanStatus.DONE)
-      return error !== null || count === null ? 0 : count
     },
   }
 }
