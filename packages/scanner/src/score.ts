@@ -100,6 +100,18 @@ export function overallScore(categories: ICategoryScore[]): number {
 }
 
 /**
+ * Minimum overall score for each grade.
+ *
+ * @export
+ */
+export const GRADE_THRESHOLDS: Readonly<Record<TGrade, number>> = {
+  [EGrade.EXCELLENT]: 90,
+  [EGrade.GOOD]: 75,
+  [EGrade.MODERATE]: 50,
+  [EGrade.POOR]: 0,
+}
+
+/**
  * Maps an overall score to a grade letter: Excellent (90+), Good (75+), Moderate (50+), or Poor.
  *
  * @param {number} overall - The overall score (0–100).
@@ -107,14 +119,92 @@ export function overallScore(categories: ICategoryScore[]): number {
  * @export
  */
 export function gradeOf(overall: number): TGrade {
-  if (overall >= 90) {
+  if (overall >= GRADE_THRESHOLDS[EGrade.EXCELLENT]) {
     return EGrade.EXCELLENT
   }
-  if (overall >= 75) {
+  if (overall >= GRADE_THRESHOLDS[EGrade.GOOD]) {
     return EGrade.GOOD
   }
-  if (overall >= 50) {
+  if (overall >= GRADE_THRESHOLDS[EGrade.MODERATE]) {
     return EGrade.MODERATE
   }
   return EGrade.POOR
+}
+
+/**
+ * A failing check and the overall-score points that fixing it would recover.
+ *
+ * @export
+ */
+export interface IRecoverableCheck {
+  id: string
+  title: string
+  points: number
+}
+
+/**
+ * Distance to the next grade and the checks that would close it fastest.
+ *
+ * @export
+ */
+export interface INextGrade {
+  next: TGrade
+  gap: number
+  checks: IRecoverableCheck[]
+}
+
+const NEXT_GRADE: Readonly<Record<TGrade, TGrade | null>> = {
+  [EGrade.EXCELLENT]: null,
+  [EGrade.GOOD]: EGrade.EXCELLENT,
+  [EGrade.MODERATE]: EGrade.GOOD,
+  [EGrade.POOR]: EGrade.MODERATE,
+}
+
+const MAX_RECOVERABLE_CHECKS = 3
+
+/**
+ * Computes how many points separate a score from the next grade and which three
+ * checks would recover the most overall points if they fully passed.
+ *
+ * Informational checks (zero weight) and fully passing checks never appear.
+ *
+ * @param {readonly ICategoryScore[]} categories - The category scores of the report.
+ * @param {number} overall - The overall score (0–100).
+ * @returns {INextGrade | null} - The next grade breakdown, or null when already Excellent.
+ * @export
+ */
+export function pointsToNextGrade(
+  categories: readonly ICategoryScore[],
+  overall: number,
+): INextGrade | null {
+  const next = NEXT_GRADE[gradeOf(overall)]
+  if (next === null) {
+    return null
+  }
+  const weightSum = Object.values(CATEGORY_WEIGHTS).reduce((sum, w) => sum + w, 0)
+  const recoverable: IRecoverableCheck[] = []
+  for (const category of categories) {
+    const categoryWeight = category.checks.reduce((sum, c) => sum + c.weight, 0)
+    if (categoryWeight <= 0) {
+      continue
+    }
+    for (const c of category.checks) {
+      const points =
+        (1 - c.score) *
+        (c.weight / categoryWeight) *
+        (CATEGORY_WEIGHTS[category.category] / weightSum) *
+        100
+      if (points > 0) {
+        recoverable.push({ id: c.id, title: c.title, points })
+      }
+    }
+  }
+  recoverable.sort((a, b) => b.points - a.points)
+  return {
+    next,
+    gap: GRADE_THRESHOLDS[next] - overall,
+    checks: recoverable
+      .slice(0, MAX_RECOVERABLE_CHECKS)
+      .map((c) => ({ id: c.id, title: c.title, points: Math.round(c.points * 10) / 10 })),
+  }
 }
