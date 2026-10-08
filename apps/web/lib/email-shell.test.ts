@@ -8,7 +8,7 @@ describe('emailShell', () => {
     expect(html).toContain('name="supported-color-schemes" content="light dark"')
     expect(html).toContain('color-scheme: light dark')
     expect(html).toContain('@media (prefers-color-scheme: light)')
-    expect(html).toContain('background-image:linear-gradient(#161613,#161613)')
+    expect(html).toContain('background-color:#161613')
     expect(html).toContain('#f3f3ee')
     expect(html).toContain('@media only screen and (max-width: 600px)')
     expect(html).toContain('Hello')

@@ -25,3 +25,12 @@ npx isreadyai https://isready.ai
 ```
 
 Or submit `https://isready.ai` on the site. The check fetches `https://www.isready.ai/` during that scan and looks for a redirect whose final host is `isready.ai`.
+
+## Supabase auth email templates
+
+The light and dark auth emails live in `packages/supabase/templates/magic-link.html` and `packages/supabase/templates/email-change.html`. `packages/supabase/config.toml` applies them to the local stack only. The hosted project keeps its own copy of each template, so production keeps sending the old dark-only emails until the new HTML is pasted in.
+
+1. Open the production project in the Supabase dashboard and go to Authentication, then Email Templates.
+2. In Magic Link, keep the subject `Your isready.ai sign-in link` and replace the body with the full contents of `packages/supabase/templates/magic-link.html`.
+3. In Change Email Address, keep the subject `Confirm your new isready.ai email` and replace the body with the full contents of `packages/supabase/templates/email-change.html`.
+4. Save both, then request a magic link and open it once in a light-mode and once in a dark-mode mail client.

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a homepage table of the five scored dimension weights.
 - Added `/llms-full.txt` and expanded `/llms.txt` into llmstxt.org file lists.
 - Listed every scanner AI crawler user-agent in robots.txt.
+- Added the Supabase auth email template paste step to the checklist.
 
 ### Changed
 
@@ -23,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Removed email background gradients so dark-mode mail clients can adapt backgrounds together with text.
+- Fixed the author X badges in the project and action READMEs.
 - Formatted the Supabase auth email templates so the oxfmt check passes.
 
 ### Security
