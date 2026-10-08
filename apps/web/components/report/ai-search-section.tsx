@@ -1,4 +1,5 @@
-import type { ICategoryScore } from '@isreadyai/scanner'
+import type { ICategoryScore, INextGrade } from '@isreadyai/scanner'
+import { Fragment } from 'react'
 import { useTranslations } from 'next-intl'
 import { gradeOf } from '@isreadyai/scanner'
 import { ScoreRing } from './score-ring'
@@ -8,15 +9,27 @@ export function AiSearchSection({
   score,
   categories,
   deep,
+  nextGrade = null,
   pending = false,
 }: {
   score: number
   categories: ICategoryScore[]
   deep: boolean
+  nextGrade?: INextGrade | null
   pending?: boolean
 }) {
   const t = useTranslations('report')
   const grade = gradeOf(score)
+  const gains = (
+    <>
+      {(nextGrade?.checks ?? []).map((c, index) => (
+        <Fragment key={c.id}>
+          {index > 0 ? ', ' : null}
+          {c.title} (+<span className="font-mono">{Math.max(1, Math.round(c.points))}</span>)
+        </Fragment>
+      ))}
+    </>
+  )
 
   return (
     <section className="mt-10">
@@ -45,6 +58,19 @@ export function AiSearchSection({
             ))}
           </div>
         </div>
+        {nextGrade !== null && !pending ? (
+          <p className="text-site-muted mt-6 text-sm">
+            {t('nextGrade', { gap: nextGrade.gap, grade: t(`grade.${nextGrade.next}`) })}
+            {nextGrade.checks.length > 0 ? (
+              <>
+                {' '}
+                {t.rich('nextGradeGains', {
+                  list: () => gains,
+                })}
+              </>
+            ) : null}
+          </p>
+        ) : null}
       </div>
     </section>
   )

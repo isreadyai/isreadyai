@@ -1037,6 +1037,8 @@
     "expandAll": "Expand all",
     "collapseAll": "Collapse all",
     "backToFullReport": "Back to the full score — scroll to top",
+    "nextGrade": "{gap, plural, one {# point} other {# points}} to {grade}.",
+    "nextGradeGains": "Biggest gains: <list></list>.",
     "grade": {
       "excellent": "Excellent",
       "good": "Good",
