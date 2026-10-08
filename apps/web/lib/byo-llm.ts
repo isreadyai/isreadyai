@@ -14,13 +14,16 @@ import { BYO_PROVIDERS, isByoProvider, type TByoProvider } from '@/lib/byo-provi
 export { BYO_PROVIDERS, isByoProvider }
 export type { TByoProvider }
 
-// Default model per provider. Kept conservative/cheap-ish; the user pays, so we
-// pick a current general model rather than the most expensive flagship.
+// Public provider model ids (not AI Gateway ids). The user pays, so these are
+// current general models rather than the flagship hosted solve pins
+// (anthropic/claude-opus-4.8). Checked 2026-10-07 against provider docs:
+// grok-4.7 (docs.x.ai), gpt-5.4-mini (platform.openai.com), gemini-3.5-flash
+// (ai.google.dev), claude-sonnet-5-5 (platform.claude.com).
 const DEFAULT_MODEL: Record<TByoProvider, string> = {
-  xai: 'grok-3',
-  openai: 'gpt-4o-mini',
-  google: 'gemini-2.0-flash',
-  anthropic: 'claude-3-5-sonnet-latest',
+  xai: 'grok-4.7',
+  openai: 'gpt-5.4-mini',
+  google: 'gemini-3.5-flash',
+  anthropic: 'claude-sonnet-5-5',
 }
 
 export type TByoResolution =

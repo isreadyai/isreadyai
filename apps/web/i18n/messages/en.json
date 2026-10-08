@@ -666,7 +666,10 @@
     "geoTitle": "Content (GEO)",
     "geoBody": "Content depth, heading structure, statistics & citations — the signals that raise visibility in generative answers.",
     "llmsTitle": "Honest signals",
-    "llmsBody": "llms.txt and Content Signals, reported honestly as informational: server logs show AI crawlers fetch llms.txt in ~0.1% of visits — we never score it."
+    "llmsBody": "llms.txt and Content Signals, reported honestly as informational: server logs show AI crawlers fetch llms.txt in ~0.1% of visits — we never score it.",
+    "weightTableCaption": "How the 0-100 score is split.",
+    "weightDimension": "Dimension",
+    "weightShare": "Share"
   },
   "cli": {
     "kicker": "CLI · open source · no install",

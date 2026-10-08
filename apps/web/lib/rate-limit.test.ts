@@ -3,6 +3,7 @@ import { afterAll, describe, expect, mock, test } from 'bun:test'
 // MARK: - Shared rate limiter
 
 let rpcResult: { data: unknown; error: { message: string } | null } = { data: true, error: null }
+let rpcArgs: unknown[] = []
 
 const realSupabase = await import('@isreadyai/supabase')
 
@@ -12,10 +13,16 @@ const realSupabase = await import('@isreadyai/supabase')
 // across files), breaking their dev/no-Supabase paths.
 mock.module('@isreadyai/supabase', () => ({
   ...realSupabase,
-  createServiceClient: () => Promise.resolve({ rpc: () => Promise.resolve(rpcResult) }),
+  createServiceClient: () =>
+    Promise.resolve({
+      rpc: (_name: string, args: unknown) => {
+        rpcArgs.push(args)
+        return Promise.resolve(rpcResult)
+      },
+    }),
 }))
 
-const { consumeRateLimit } = await import('./rate-limit')
+const { consumeRateLimit, ERateLimitScope } = await import('./rate-limit')
 
 const savedEnv = {
   url: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -51,9 +58,17 @@ describe('consumeRateLimit — in-memory (dev / no Supabase)', () => {
   test('allows up to the limit then denies within the window', async () => {
     configureSupabase(false)
     const key = `dev:${Math.random()}`
-    expect(await consumeRateLimit(key, 60_000, 2)).toBe(true)
-    expect(await consumeRateLimit(key, 60_000, 2)).toBe(true)
-    expect(await consumeRateLimit(key, 60_000, 2)).toBe(false)
+    expect(await consumeRateLimit(ERateLimitScope.PROXY, key, 60_000, 2)).toBe(true)
+    expect(await consumeRateLimit(ERateLimitScope.PROXY, key, 60_000, 2)).toBe(true)
+    expect(await consumeRateLimit(ERateLimitScope.PROXY, key, 60_000, 2)).toBe(false)
+  })
+
+  test('keeps the same subject isolated across scopes', async () => {
+    configureSupabase(false)
+    const subject = `iso:${Math.random()}`
+    expect(await consumeRateLimit(ERateLimitScope.PROXY, subject, 60_000, 1)).toBe(true)
+    expect(await consumeRateLimit(ERateLimitScope.EMAIL_REPORT, subject, 60_000, 1)).toBe(true)
+    expect(await consumeRateLimit(ERateLimitScope.PROXY, subject, 60_000, 1)).toBe(false)
   })
 })
 
@@ -61,15 +76,25 @@ describe('consumeRateLimit — shared store', () => {
   test('returns the rpc verdict (allow / deny)', async () => {
     configureSupabase(true)
     rpcResult = { data: false, error: null }
-    expect(await consumeRateLimit('k', 60_000, 5)).toBe(false)
+    expect(await consumeRateLimit(ERateLimitScope.PROXY, 'k', 60_000, 5)).toBe(false)
     rpcResult = { data: true, error: null }
-    expect(await consumeRateLimit('k', 60_000, 5)).toBe(true)
+    expect(await consumeRateLimit(ERateLimitScope.PROXY, 'k', 60_000, 5)).toBe(true)
+  })
+
+  test('namespaces the bucket key as scope:subject', async () => {
+    configureSupabase(true)
+    rpcResult = { data: true, error: null }
+    rpcArgs = []
+    await consumeRateLimit(ERateLimitScope.PROXY, '1.2.3.4', 60_000, 5)
+    expect(rpcArgs).toEqual([{ p_key: 'proxy:1.2.3.4', p_window_ms: 60_000, p_limit: 5 }])
   })
 
   test('fails open to the in-memory guard on an rpc error', async () => {
     configureSupabase(true)
     rpcResult = { data: null, error: { message: 'boom' } }
     // First hit for a fresh key passes via the in-memory fallback.
-    expect(await consumeRateLimit(`err:${Math.random()}`, 60_000, 2)).toBe(true)
+    expect(await consumeRateLimit(ERateLimitScope.PROXY, `err:${Math.random()}`, 60_000, 2)).toBe(
+      true,
+    )
   })
 })

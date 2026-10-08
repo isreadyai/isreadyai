@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added a Cloudflare checklist for the missing `www.isready.ai` DNS record.
+- Added a homepage table of the five scored dimension weights.
+- Added `/llms-full.txt` and expanded `/llms.txt` into llmstxt.org file lists.
+- Listed every scanner AI crawler user-agent in robots.txt.
+- Added the Supabase auth email template paste step to the checklist.
+
+### Changed
+
+- www.isready.ai now 301s to https://isready.ai once the host reaches the app.
+- Transactional and auth emails now follow the light or dark color scheme.
+- Bring-your-own model defaults now use grok-4.7, gpt-5.4-mini, gemini-3.5-flash and claude-sonnet-5-5.
+- Updated Next.js to 16.4.0, HeroUI to 3.2.6, and the AI SDK packages to their current 4.x and 7.x patches.
+
+### Fixed
+
+- Removed email background gradients so dark-mode mail clients can adapt backgrounds together with text.
+- Fixed the author X badges in the project and action READMEs.
+- Formatted the Supabase auth email templates so the oxfmt check passes.
+
+### Security
+
+- Raised the dompurify, postcss, undici, sharp, source-map-js, tinypool and baseline-browser-mapping overrides so `bun audit` passes.
+- Rejected control characters and backslashes in post-login `next` redirects, which let `/%09/evil.tld` leave the site.
+- Gave each route its own rate-limit bucket, so deep-scan proxy calls no longer use up the report-email limit.
+- Enforced the solve token call budget in the shared rate-limit store and rejected tokens whose API key was revoked.
+- Stored the OIDC-verified `owner/repo` for CI reports instead of the uploaded value.
+
 ## [1.1.4] - 2026-09-01
 
 ### Fixed

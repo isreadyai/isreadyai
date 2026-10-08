@@ -427,7 +427,7 @@ A live, linked version of these thanks lives at
 ## Author
 
 <p>
-  <a href="https://x.com/massimodeluisa"><img src="https://img.shields.io/badge/X-@massimodeluisa-000000?style=flat-square&logo=x" alt="X" /></a>
+  <a href="https://x.com/massimodeluisa"><img src="https://img.shields.io/badge/@massimodeluisa-000000?style=flat-square&logo=x" alt="X" /></a>
   <a href="https://github.com/isreadyai"><img src="https://img.shields.io/badge/GitHub-isreadyai-181717?style=flat-square&logo=github" alt="GitHub" /></a>
 </p>
 

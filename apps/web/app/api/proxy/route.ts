@@ -7,7 +7,7 @@ import {
   NativeProvider,
   type TDnsResolver,
 } from '@isreadyai/scanner'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 import { clientIp } from '@/lib/client-ip'
 import { SITE_URL } from '@/lib/site'
 import { verifyProxyToken } from '@/lib/proxy-token'
@@ -86,7 +86,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const ip = clientIp(request)
-  if (!(await consumeRateLimit(ip, RATE_WINDOW_MS, RATE_LIMIT))) {
+  if (!(await consumeRateLimit(ERateLimitScope.PROXY, ip, RATE_WINDOW_MS, RATE_LIMIT))) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 

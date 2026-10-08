@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 import { consumeMeteredRun, solveQuota, verifyApiKey } from '@/lib/api-keys'
 import { isPaidPlan } from '@/lib/plans'
 import { signSolveToken, solveSecret } from '@/lib/solve-token'
@@ -54,7 +54,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 403 },
     )
   }
-  if (!(await consumeRateLimit(key.id, RATE_WINDOW_MS, RATE_LIMIT))) {
+  if (!(await consumeRateLimit(ERateLimitScope.SOLVE_TOKEN, key.id, RATE_WINDOW_MS, RATE_LIMIT))) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 

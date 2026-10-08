@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { isScanReport } from '@isreadyai/scanner'
 import { consumeMeteredRun, planQuota, refundMeteredRun, verifyApiKey } from '@/lib/api-keys'
 import { isPaidPlan } from '@/lib/plans'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 import { fixPlanConfigured, generateAiFixPlan } from '@/lib/fix-plan-ai'
 
 // MARK: - POST /api/fix-plan — AI-generated, stack-tailored remediation plan
@@ -43,7 +43,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 403 },
     )
   }
-  if (!(await consumeRateLimit(key.id, RATE_WINDOW_MS, RATE_LIMIT))) {
+  if (!(await consumeRateLimit(ERateLimitScope.FIX_PLAN, key.id, RATE_WINDOW_MS, RATE_LIMIT))) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 

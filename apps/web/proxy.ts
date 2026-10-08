@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { wwwToApexUrl } from '@/lib/apex-host'
 
 // MARK: - Session refresh proxy
 
@@ -9,6 +10,11 @@ import { NextResponse, type NextRequest } from 'next/server'
  * protection lives in the /dashboard layout, not here.
  */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const apex = wwwToApexUrl(request.headers.get('host'), request.nextUrl)
+  if (apex !== null) {
+    return NextResponse.redirect(apex, 301)
+  }
+
   const response = NextResponse.next({ request })
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
