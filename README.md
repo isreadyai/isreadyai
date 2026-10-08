@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>Is your website ready for AI?</strong><br />
-  A free audit — powered by an open-source (MIT) engine and CLI — that checks whether a site or SaaS is readable, crawlable and optimized for ChatGPT, Claude, Perplexity, Gemini and every AI search engine
+  A free audit of whether a site or SaaS is readable and crawlable for ChatGPT, Claude, Perplexity, Gemini, and other AI search engines. The scanner, CLI, and GitHub Action are MIT. The web dashboard is source-available under PolyForm Shield 1.0.0.
 </p>
 
 <p align="center">
@@ -53,7 +53,7 @@ navigation. The standard crawler score remains unchanged.
 
 ### Why
 
-AI assistants are becoming a primary discovery channel, and the rules differ from classic SEO in ways that are invisible until you measure them. One header can hide you from ChatGPT while Google still ranks you. This project makes those failures visible, explainable and fixable — and the scanner is fully open source.
+AI assistants are becoming a primary discovery channel, and the rules differ from classic SEO in ways that are invisible until you measure them. One header can hide you from ChatGPT while Google still ranks you. This project makes those failures visible, explainable, and fixable. The scanner, CLI, and GitHub Action are MIT. The web dashboard is source-available under PolyForm Shield 1.0.0.
 
 ### Built With
 
@@ -150,6 +150,12 @@ https://vercel.com  ·  2026-06-10
   ▰▰▰▰▰▰▰▰▰▰  100  Trust & security
   ▰▰▰▰▰▰▰▰▱▱   81  Content (GEO)
 ```
+
+<p align="center">
+  <img src=".github/assets/web-report.png" alt="Public isready.ai report for sidus.tools, with the score and category findings" width="800" />
+</p>
+
+Public report for [sidus.tools](https://sidus.tools/): [isready.ai/report/67e7b5da-85df-4f88-b41f-3e26fd2c7b23](https://isready.ai/report/67e7b5da-85df-4f88-b41f-3e26fd2c7b23).
 
 Useful flags: `--json` (machine-readable report), `--quiet` (score only),
 `--md` (human Markdown), `--llm` (AI-agent fix plan), `--deep` (crawl the whole
@@ -333,7 +339,7 @@ See [open issues](https://github.com/isreadyai/isreadyai/issues) for the full li
 
 ## Contributing
 
-Contributions make the open-source community an amazing place to learn and create. Any contribution is **greatly appreciated** — especially new checks (each one is a small, tested module in `packages/scanner/src/checks/`).
+Contributions to the MIT scanner, CLI, and GitHub Action are welcome. The web dashboard is source-available under PolyForm Shield 1.0.0. New checks are especially useful. Each one is a small, tested module in `packages/scanner/src/checks/`.
 
 1. Fork the project
 2. Create your feature branch (`git checkout -b feat/amazing-check`)
@@ -429,10 +435,11 @@ A live, linked version of these thanks lives at
 
 ## License
 
-© 2026 Smart Squad S.r.l. Dual-licensed by area, see [LICENSE](LICENSE) and [NOTICE](NOTICE):
+© 2026 Smart Squad S.r.l. The license is split. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
-- **Open engine — MIT.** `packages/scanner` and `apps/cli`.
-- **Dashboard — PolyForm Shield 1.0.0.** `apps/web` and `packages/supabase` are source-available; you may not use them to build a product that competes with isready.ai.
+The scanner (`packages/scanner`), the CLI (`apps/cli`), and the GitHub Action are MIT. `actions/audit-action/SYNCED.md` and `actions/fix-action/SYNCED.md` say the published action `LICENSE` is copied from `apps/cli/LICENSE`.
+
+The web dashboard (`apps/web` and `packages/supabase`) is source-available under PolyForm Shield 1.0.0. You may not use it to build a product that competes with isready.ai.
 
 [Turborepo]: https://img.shields.io/badge/Turborepo-EF4444?style=flat-square&logo=turborepo&logoColor=white
 [Turborepo-url]: https://turborepo.com/
