@@ -95,7 +95,7 @@ export default async function HomePage({
 
   const steps = [1, 2, 3].map((i) => ({
     title: t(`how.step${i}Title`),
-    body: t(`how.step${i}Body`),
+    body: t(`how.step${i}Body`, { count: allChecks.length }),
   }))
 
   const checkGroups = [
@@ -415,7 +415,7 @@ export default async function HomePage({
                   — {t('why.quoteSource')}
                 </cite>
               </blockquote>
-              <p>{t('why.p3')}</p>
+              <p>{t('why.p3', { count: allChecks.length })}</p>
               <p className="text-site-faint text-sm">
                 {t('why.sourcesLabel')}:{' '}
                 <a

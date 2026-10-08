@@ -73,8 +73,9 @@ Each check is one focused, deterministic module. To add one:
 4. **Bump the count** in
    [`checks/registry.test.ts`](./packages/scanner/src/checks/registry.test.ts):
    `PUBLISHED_CHECK_COUNT` is an anti-drift guard. It deliberately fails when the
-   registry size changes so the public "32 checks" copy stays in sync — update
-   the number **and** the marketing copy it guards (homepage / FAQ) in lockstep.
+   registry size changes, so adding or removing a check is always a conscious
+   change. Public copy reads the count from `allChecks.length`, so pass it as a
+   `{count}` parameter instead of writing the number into a message.
 
 Run `bun test` until green, then open your PR.
 

@@ -77,7 +77,7 @@
     "subtitle": "Here's everything you can do from here.",
     "stepScan": {
       "title": "Run a scan",
-      "body": "Audit any URL against 32 agent-readability checks across 5 dimensions, including a real-browser agent check."
+      "body": "Audit any URL against {count} agent-readability checks across 5 dimensions, including a real-browser agent check."
     },
     "stepTrack": {
       "title": "Track a site",
@@ -504,7 +504,7 @@
     "ctaFree": "Start free",
     "ctaPaid": "Get {plan}",
     "reassurance": "Free plan needs no card · Secure checkout via Stripe · Cancel anytime",
-    "fAudit": "Agent Readability audit — 32 checks, 5 dimensions",
+    "fAudit": "Agent Readability audit — {count} checks, 5 dimensions",
     "fDeepScan": "Deep scan — sitemap + links · up to {limit} pages",
     "fSmartCheck": "Browser-capable agent check (Smart Agent readability)",
     "fResolution": "Resolution plan — a concrete fix for every finding",
@@ -668,7 +668,7 @@
     "step2Title": "Read what they read",
     "step2Body": "We parse the raw HTML exactly as GPTBot and ClaudeBot do — no JavaScript, because they don't run it either. Empty app shells and content that only appears after hydration get flagged.",
     "step3Title": "Score and fix",
-    "step3Body": "32 evidence-based checks across 5 dimensions produce a 0–100 score, and every finding ships with a concrete fix, impact and effort."
+    "step3Body": "{count} evidence-based checks across 5 dimensions produce a 0–100 score, and every finding ships with a concrete fix, impact and effort."
   },
   "checks": {
     "title": "What we check",
@@ -735,7 +735,7 @@
     "stat1Label": "more visible with quotations",
     "stat2Label": "with added statistics",
     "stat3Label": "when citing credible sources",
-    "p3": "Meanwhile, one misconfigured header can erase you: Cloudflare's AI-bot blocking now protects millions of sites, and many owners don't realize it also removes them from ChatGPT and Perplexity answers. Independent server-log studies show 2.5 million+ websites already disallow AI training — a legitimate choice, but one that should be made deliberately, not by accident. That is exactly what this scanner makes visible: 32 evidence-based checks, each with the observed value, the consequence, and the precise fix.",
+    "p3": "Meanwhile, one misconfigured header can erase you: Cloudflare's AI-bot blocking now protects millions of sites, and many owners don't realize it also removes them from ChatGPT and Perplexity answers. Independent server-log studies show 2.5 million+ websites already disallow AI training — a legitimate choice, but one that should be made deliberately, not by accident. That is exactly what this scanner makes visible: {count} evidence-based checks, each with the observed value, the consequence, and the precise fix.",
     "sourcesLabel": "Primary sources",
     "source1": "GEO research paper (arXiv)",
     "source2": "OpenAI crawler documentation",
