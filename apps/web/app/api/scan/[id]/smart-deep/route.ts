@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { ISmartAgentSiteReport } from '@isreadyai/scanner'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 import { apiKeyOwnerId, verifyApiKey } from '@/lib/api-keys'
 import { isPaidPlan } from '@/lib/plans'
 import { getScanStore } from '@/lib/scan-store'
@@ -69,7 +69,14 @@ export async function POST(
   if (!access.ok) {
     return NextResponse.json({ error: 'premium_required' }, { status: 403 })
   }
-  if (!(await consumeRateLimit(access.rateKey, RATE_WINDOW_MS, RATE_LIMIT))) {
+  if (
+    !(await consumeRateLimit(
+      ERateLimitScope.SMART_DEEP,
+      access.rateKey,
+      RATE_WINDOW_MS,
+      RATE_LIMIT,
+    ))
+  ) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
