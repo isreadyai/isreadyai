@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added a first-party about page with company, licensing, product and contact facts.
 - Added a live research page with corpus statistics, the most common gaps, methods and limits.
 - Added a points-to-next-grade hint with the three biggest gains to the report.
 - Added a points-to-next-grade breakdown to the scanner's scoring API.

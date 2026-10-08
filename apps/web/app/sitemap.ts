@@ -12,6 +12,7 @@ const PATHS = [
   '/acknowledgements',
   '/contact',
   '/research',
+  '/about',
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {

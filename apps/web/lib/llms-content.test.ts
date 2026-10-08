@@ -15,6 +15,7 @@ describe('llmsTxt', () => {
     expect(text).toContain('## Machine readable')
     expect(text).toContain('## Optional')
     expect(text).toContain('/llms-full.txt')
+    expect(text).toContain(`[About](${SITE_URL}/about)`)
     expect(text).toContain(`[Research](${SITE_URL}/research)`)
     expect(text).not.toMatch(/^### /m)
   })
