@@ -27,7 +27,7 @@ max_client_conn = 100
 
 [db.migrations]
 enabled = true
-schema_paths = ["./migrations/*.sql"]
+# pg-delta orders declarative files by dependency. schema_paths is unused.
 
 [db.seed]
 enabled = true
@@ -86,13 +86,15 @@ enable_confirmations = true
 # shell (apps/web/lib/email.ts). content_path resolves against the Supabase
 # workdir (the monorepo's packages/ dir), hence the ./supabase/ prefix; the
 # hosted dashboard needs the same HTML pasted into its email templates.
+# content_path is off while [experimental] stack = true: the stack backend rejects template
+# serving. Restore both lines before any `supabase config push`, or hosted templates reset.
 [auth.email.template.magic_link]
 subject = "Your isready.ai sign-in link"
-content_path = "./supabase/templates/magic-link.html"
+# content_path = "./supabase/templates/magic-link.html"
 
 [auth.email.template.email_change]
 subject = "Confirm your new isready.ai email"
-content_path = "./supabase/templates/email-change.html"
+# content_path = "./supabase/templates/email-change.html"
 
 # Cloudflare Turnstile bot protection. Local uses Cloudflare's documented
 # "always passes" test secret; production sets the real secret in the hosted
@@ -127,3 +129,14 @@ secret = "env(SUPABASE_AUTH_X_SECRET)"
 
 [analytics]
 enabled = false
+
+# New local stack backend (start/stop/status/db route to `supabase stack`), one stack per project.
+# The runtime is fixed when the stack is created: `supabase start --runtime native` runs it without
+# Docker; `auto` picks Docker whenever its daemon answers.
+# CI derives a legacy Docker config from this file; local development keeps the experimental stack.
+[experimental]
+stack = true
+
+[experimental.pgdelta]
+enabled = true
+declarative_schema_path = "./schemas"

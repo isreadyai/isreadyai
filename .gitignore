@@ -35,6 +35,10 @@ npm-debug.log*
 
 # Claude / agent workspace
 .claude/
+.cos-*
+
+# Firecrawl research dumps
+.firecrawl/
 
 # OS / editors
 .DS_Store

@@ -22,21 +22,16 @@ export async function HeroCopy({ mkt }: { mkt: number }) {
       <>
         <Reveal delay={0.08}>
           <h1 className={HEADLINE_CLASS}>
-            <span className="block">{t('hero.future')}</span>
+            <span className="block">{t('hero.questionPrefix')}</span>
             <span className="mt-2 block">
-              <span className="sm:whitespace-nowrap">
-                {t('hero.questionPrefix')}{' '}
-                <FlipBoardText
-                  terms={[
-                    t('hero.subjectWebsite'),
-                    t('hero.subjectWebApp'),
-                    t('hero.subjectDocsSite'),
-                    t('hero.subjectLandingPage'),
-                    t('hero.subjectPortfolio'),
-                  ]}
-                />
-              </span>{' '}
-              <TorchText>{t('hero.titleAccent')}</TorchText>
+              <FlipBoardText
+                terms={[
+                  t('hero.assistantChatgpt'),
+                  t('hero.assistantClaude'),
+                  t('hero.assistantGemini'),
+                  t('hero.assistantPerplexity'),
+                ]}
+              />
               {t('hero.title2')}
             </span>
           </h1>

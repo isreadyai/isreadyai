@@ -21,9 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Transactional and auth emails now follow the light or dark color scheme.
 - Bring-your-own model defaults now use grok-4.7, gpt-5.4-mini, gemini-3.5-flash and claude-sonnet-5-5.
 - Updated Next.js to 16.4.0, HeroUI to 3.2.6, and the AI SDK packages to their current 4.x and 7.x patches.
+- Updated React to 19.3, supabase-js to 2.117.2, the Supabase CLI to 2.120.0, zod to 4.6.5 and next-intl to 4.14.9.
+- Switched local Supabase to the native stack backend and added a pg-delta declarative schema baseline exported from production.
+- Ignored local Firecrawl dumps and agent brief files.
+- Changed the homepage hero to name ChatGPT, Claude, Gemini and Perplexity, added a section on how Googlebot and AI crawlers read a page, and added three FAQ entries.
 
 ### Fixed
 
+- Kept Supabase migration and pgTAP tests on the legacy Docker CLI in CI while preserving the experimental stack for local development.
 - Removed email background gradients so dark-mode mail clients can adapt backgrounds together with text.
 - Fixed the author X badges in the project and action READMEs.
 - Formatted the Supabase auth email templates so the oxfmt check passes.
@@ -35,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gave each route its own rate-limit bucket, so deep-scan proxy calls no longer use up the report-email limit.
 - Enforced the solve token call budget in the shared rate-limit store and rejected tokens whose API key was revoked.
 - Stored the OIDC-verified `owner/repo` for CI reports instead of the uploaded value.
+- Pinned search_path on four database functions and revoked direct RPC execution of trigger functions and the workspace membership helper from anonymous callers.
 
 ## [1.1.4] - 2026-09-01
 
