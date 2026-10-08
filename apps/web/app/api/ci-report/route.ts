@@ -79,7 +79,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     result = await persistCiReport({
       repositoryId: parsed.data.repositoryId,
-      ownerRepo: parsed.data.ownerRepo,
+      ownerRepo: repoIdentity.ownerRepo,
       branch: parsed.data.branch,
       commit: parsed.data.commit,
       url: parsed.data.url,

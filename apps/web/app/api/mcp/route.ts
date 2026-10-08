@@ -4,7 +4,7 @@ import { verifyApiKey } from '@/lib/api-keys'
 import type { IApiKey } from '@/lib/api-key-types'
 import { findTool, toolDescriptors } from '@/lib/mcp/tools'
 import { isPaidPlan } from '@/lib/plans'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 
 // MARK: - POST /api/mcp — Streamable-HTTP MCP server
 //
@@ -119,7 +119,7 @@ async function meter(key: IApiKey): Promise<void> {
  */
 async function chargeRateLimit(keyId: string, units: number): Promise<boolean> {
   for (let i = 0; i < units; i++) {
-    if (!(await consumeRateLimit(`mcp:${keyId}`, RATE_WINDOW_MS, RATE_LIMIT))) {
+    if (!(await consumeRateLimit(ERateLimitScope.MCP, keyId, RATE_WINDOW_MS, RATE_LIMIT))) {
       return false
     }
   }

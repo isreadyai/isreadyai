@@ -18,21 +18,43 @@ function memoryAllow(key: string, windowMs: number, limit: number): boolean {
   return true
 }
 
+/** One namespace per limiter, so two routes can never share a counter. */
+export const ERateLimitScope = {
+  CHAT: 'chat',
+  CONTACT: 'contact',
+  CONTACT_GLOBAL: 'contact-global',
+  EMAIL_REPORT: 'email-report',
+  EMAIL_REPORT_GLOBAL: 'email-report-global',
+  FIX_NOTIFY: 'fix-notify',
+  FIX_PLAN: 'fix-plan',
+  MCP: 'mcp',
+  PROXY: 'proxy',
+  SMART_DEEP: 'smart-deep',
+  SOLVE_INFERENCE: 'solve-inference',
+  SOLVE_TOKEN: 'solve-token',
+  TELEMETRY: 'telemetry',
+} as const
+
+export type TRateLimitScope = (typeof ERateLimitScope)[keyof typeof ERateLimitScope]
+
 /**
  * Consumes one unit against a SHARED, cross-instance rate limit (the
  * consume_rate_limit Postgres function), returning true when the caller is within
- * `limit` for the current `windowMs` window. Replaces module-level Map counters,
- * which reset per serverless cold start and aren't shared between instances.
+ * `limit` for the current `windowMs` window. The bucket key is `scope:subject`.
+ * Replaces module-level Map counters, which reset per serverless cold start and
+ * aren't shared between instances.
  *
  * Without Supabase (dev) it uses a per-instance in-memory window; on a metering
  * error it FAILS OPEN to that same in-memory guard — availability over
  * enforcement for a transient blip, with per-instance protection still applied.
  */
 export async function consumeRateLimit(
-  key: string,
+  scope: TRateLimitScope,
+  subject: string,
   windowMs: number,
   limit: number,
 ): Promise<boolean> {
+  const key = `${scope}:${subject}`
   if (!isSupabaseConfigured()) {
     return memoryAllow(key, windowMs, limit)
   }

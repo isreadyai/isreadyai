@@ -52,10 +52,9 @@ export async function sendEmail(input: {
  * Shared, responsive outer chrome for every transactional email: a table-based
  * (Outlook-safe) card with a mobile breakpoint and the ◆ isready.ai brand mark.
  * Inline colors are the dark brand. `prefers-color-scheme: light` restyles the
- * same classes. Matching `background-image` gradients are there because Gmail
- * skips inverting a background that is also a same-color gradient. Callers
- * supply inner markup. The same structure is mirrored as static HTML in
- * packages/supabase/templates/* so app and auth mail share one look.
+ * same classes. Use solid background colors so clients that invert text can
+ * adapt its background too. Callers supply inner markup. The same structure
+ * is mirrored in packages/supabase/templates/* so app and auth mail share one look.
  */
 export function emailShell(content: string): string {
   return `<!doctype html>
@@ -72,8 +71,8 @@ export function emailShell(content: string): string {
         .ir-pad { padding: 28px 20px !important; }
       }
       @media (prefers-color-scheme: light) {
-        .ir-bg { background-color: #f3f3ee !important; background-image: linear-gradient(#f3f3ee, #f3f3ee) !important; }
-        .ir-card { background-color: #ffffff !important; background-image: linear-gradient(#ffffff, #ffffff) !important; border-color: #e2e2db !important; }
+        .ir-bg { background-color: #f3f3ee !important; }
+        .ir-card { background-color: #ffffff !important; border-color: #e2e2db !important; }
         .ir-pad, .ir-pad h1, .ir-text { color: #1c1c19 !important; }
         .ir-muted { color: #4d4d46 !important; }
         .ir-faint { color: #5c5c55 !important; }
@@ -81,11 +80,11 @@ export function emailShell(content: string): string {
       }
     </style>
   </head>
-  <body class="ir-bg" style="margin:0;padding:0;background-color:#161613;background-image:linear-gradient(#161613,#161613)">
-    <table role="presentation" class="ir-bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#161613;background-image:linear-gradient(#161613,#161613)">
+  <body class="ir-bg" style="margin:0;padding:0;background-color:#161613">
+    <table role="presentation" class="ir-bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#161613">
       <tr>
         <td align="center" style="padding:32px 16px">
-          <table role="presentation" class="ir-card" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px;max-width:560px;background-color:#1c1c19;background-image:linear-gradient(#1c1c19,#1c1c19);border:1px solid #2e2e29;border-radius:16px">
+          <table role="presentation" class="ir-card" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px;max-width:560px;background-color:#1c1c19;border:1px solid #2e2e29;border-radius:16px">
             <tr>
               <td class="ir-pad" style="padding:36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#ececea">
                 <p class="ir-brand" style="margin:0 0 28px;font-size:15px;font-weight:600;color:#b8f53d">&#9670; isready.ai</p>

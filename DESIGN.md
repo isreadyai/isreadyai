@@ -119,6 +119,13 @@ data-only score scale. All tokens are defined in the `@theme` block of
 `text-site-muted`, `text-score-poor`) or as CSS variables in SVG
 (`var(--color-site-accent)`).
 
+Transactional and Supabase auth emails use the dark inline brand as their
+fallback and a light palette when the mail client supports `prefers-color-scheme`.
+Use solid background colors so mail clients that automatically invert text can
+adapt its background too; do not lock email surfaces with background gradients.
+The shared app shell in `apps/web/lib/email.ts` and the static templates in
+`packages/supabase/templates` must keep the same color behavior.
+
 ### Neutral surfaces and text
 
 Surfaces step up in lightness from the page background to raised chrome; text

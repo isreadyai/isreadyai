@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a homepage table of the five scored dimension weights.
 - Added `/llms-full.txt` and expanded `/llms.txt` into llmstxt.org file lists.
 - Listed every scanner AI crawler user-agent in robots.txt.
+- Added the Supabase auth email template paste step to the checklist.
 
 ### Changed
 
@@ -23,11 +24,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Removed email background gradients so dark-mode mail clients can adapt backgrounds together with text.
+- Fixed the author X badges in the project and action READMEs.
 - Formatted the Supabase auth email templates so the oxfmt check passes.
 
 ### Security
 
 - Raised the dompurify, postcss, undici, sharp, source-map-js, tinypool and baseline-browser-mapping overrides so `bun audit` passes.
+- Rejected control characters and backslashes in post-login `next` redirects, which let `/%09/evil.tld` leave the site.
+- Gave each route its own rate-limit bucket, so deep-scan proxy calls no longer use up the report-email limit.
+- Enforced the solve token call budget in the shared rate-limit store and rejected tokens whose API key was revoked.
+- Stored the OIDC-verified `owner/repo` for CI reports instead of the uploaded value.
 
 ## [1.1.4] - 2026-09-01
 

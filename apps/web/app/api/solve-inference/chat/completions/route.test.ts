@@ -1,6 +1,48 @@
-import { afterAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { EPlan } from '@/lib/plans'
 import { signSolveToken, type ISolveClaims } from '@/lib/solve-token'
-import { forwardedInputBytes, inputTooLarge, POST, sanitizeInferenceBody } from './route.ts'
+
+// MARK: - POST /api/solve-inference test setup
+//
+// `findApiKeyById` / `consumeRateLimit` are mocked at the factory boundary so the
+// key re-check and the shared call budget run without a live database. Both are
+// restored in afterAll so the mock never leaks into sibling suites.
+
+type TFoundKey = Awaited<ReturnType<typeof realApiKeys.findApiKeyById>>
+
+let keyResult: TFoundKey
+let budgetAllowed: boolean
+let budgetCalls: unknown[][]
+
+const realApiKeys = await import('@/lib/api-keys')
+const realRateLimit = await import('@/lib/rate-limit')
+
+mock.module('@/lib/api-keys', () => ({
+  ...realApiKeys,
+  findApiKeyById: () => Promise.resolve(keyResult),
+}))
+
+mock.module('@/lib/rate-limit', () => ({
+  ...realRateLimit,
+  consumeRateLimit: (...args: unknown[]) => {
+    budgetCalls.push(args)
+    return Promise.resolve(budgetAllowed)
+  },
+}))
+
+const { forwardedInputBytes, inputTooLarge, POST, sanitizeInferenceBody } =
+  await import('./route.ts')
+
+afterAll(() => {
+  mock.module('@/lib/api-keys', () => realApiKeys)
+  mock.module('@/lib/rate-limit', () => realRateLimit)
+})
+
+beforeEach(() => {
+  keyResult = { id: 'key-1', plan: EPlan.PRO, workspace_id: null }
+  budgetAllowed = true
+  budgetCalls = []
+})
 
 const MODEL = 'anthropic/claude-sonnet-4.6'
 const CAP = 4096
@@ -92,13 +134,13 @@ describe('POST request_too_large body', () => {
     }
   })
 
-  async function oversizedRequest(jti: string): Promise<Request> {
+  async function oversizedRequest(jti: string, calls = 10): Promise<Request> {
     const claims: ISolveClaims = {
       sub: 'key-1',
       scope: 'inference',
       model: MODEL,
       jti,
-      calls: 10,
+      calls,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 900,
     }
@@ -130,5 +172,41 @@ describe('POST request_too_large body', () => {
 
     const body = (await res.json()) as { got_bytes: number }
     expect(body.got_bytes).toBe(expectedBytes)
+  })
+
+  test('rejects a token whose API key no longer exists or was revoked', async () => {
+    keyResult = null
+
+    const res = await POST(await oversizedRequest('run-key-null'))
+
+    expect(res.status).toBe(401)
+    expect(((await res.json()) as { error: string }).error).toBe('invalid_token')
+    expect(budgetCalls).toHaveLength(0)
+  })
+
+  test('rejects a token whose API key is on the free plan', async () => {
+    keyResult = { id: 'key-1', plan: EPlan.FREE, workspace_id: null }
+
+    const res = await POST(await oversizedRequest('run-key-free'))
+
+    expect(res.status).toBe(401)
+    expect(((await res.json()) as { error: string }).error).toBe('invalid_token')
+  })
+
+  test('returns 429 call_budget_exceeded when the shared budget is spent', async () => {
+    budgetAllowed = false
+
+    const res = await POST(await oversizedRequest('run-budget'))
+
+    expect(res.status).toBe(429)
+    expect(((await res.json()) as { error: string }).error).toBe('call_budget_exceeded')
+  })
+
+  test('charges the budget under the solve-inference scope with jti and calls', async () => {
+    await POST(await oversizedRequest('run-args', 7))
+
+    expect(budgetCalls).toHaveLength(1)
+    expect(budgetCalls[0]?.slice(0, 2)).toEqual(['solve-inference', 'run-args'])
+    expect(budgetCalls[0]?.[3]).toBe(7)
   })
 })
