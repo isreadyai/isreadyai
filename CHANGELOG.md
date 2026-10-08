@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-08
+
 ### Added
 
 - Added a Cloudflare checklist for the missing `www.isready.ai` DNS record.
@@ -25,16 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switched local Supabase to the native stack backend and added a pg-delta declarative schema baseline exported from production.
 - Ignored local Firecrawl dumps and agent brief files.
 - Changed the homepage hero to name ChatGPT, Claude, Gemini and Perplexity, added a section on how Googlebot and AI crawlers read a page, and added three FAQ entries.
-
-### Fixed
-
 - Kept Supabase migration and pgTAP tests on the legacy Docker CLI in CI while preserving the experimental stack for local development.
 - Removed email background gradients so dark-mode mail clients can adapt backgrounds together with text.
 - Fixed the author X badges in the project and action READMEs.
 - Formatted the Supabase auth email templates so the oxfmt check passes.
-
-### Security
-
 - Raised the dompurify, postcss, undici, sharp, source-map-js, tinypool and baseline-browser-mapping overrides so `bun audit` passes.
 - Rejected control characters and backslashes in post-login `next` redirects, which let `/%09/evil.tld` leave the site.
 - Gave each route its own rate-limit bucket, so deep-scan proxy calls no longer use up the report-email limit.
