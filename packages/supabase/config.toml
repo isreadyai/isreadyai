@@ -133,6 +133,7 @@ enabled = false
 # New local stack backend (start/stop/status/db route to `supabase stack`), one stack per project.
 # The runtime is fixed when the stack is created: `supabase start --runtime native` runs it without
 # Docker; `auto` picks Docker whenever its daemon answers.
+# CI derives a legacy Docker config from this file; local development keeps the experimental stack.
 [experimental]
 stack = true
 
