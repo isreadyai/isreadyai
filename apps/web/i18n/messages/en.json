@@ -548,16 +548,13 @@
   },
   "hero": {
     "kicker": "Open-source · {count} real checks · free",
-    "future": "The future is AI.",
-    "questionPrefix": "Is your",
-    "subjectWebsite": "website",
-    "subjectWebApp": "web app",
-    "subjectLandingPage": "landing page",
-    "subjectPortfolio": "portfolio",
-    "subjectDocsSite": "docs site",
-    "titleAccent": "ready for AI",
+    "questionPrefix": "Is your site ready for",
+    "assistantChatgpt": "ChatGPT",
+    "assistantClaude": "Claude",
+    "assistantGemini": "Gemini",
+    "assistantPerplexity": "Perplexity",
     "title2": "?",
-    "subtitle": "Your customers ask ChatGPT, Perplexity and Gemini before they ask Google. If AI can't read your site, you're invisible in the answers they trust. See exactly what every AI sees — and the precise fixes to get cited.",
+    "subtitle": "The scan fetches the page the way those assistants do, then lists each finding with a fix.",
     "inputPlaceholder": "yourdomain.com",
     "inputAriaLabel": "Website URL to scan",
     "cta": "Scan for free",
@@ -620,6 +617,14 @@
     "checks": "real checks",
     "crawlers": "AI crawlers tracked",
     "seconds": "typical scan time"
+  },
+  "readers": {
+    "title": "Google can rank a page the assistants never read.",
+    "body": "Googlebot renders JavaScript. GPTBot, ClaudeBot and PerplexityBot read the HTML the server sent. A client-rendered app can sit on page one and still arrive empty.",
+    "googleLabel": "Googlebot",
+    "googleBody": "Renders the page, including client-side JavaScript.",
+    "aiLabel": "GPTBot, ClaudeBot, PerplexityBot",
+    "aiBody": "Read the raw HTML. JavaScript on the page stays unexecuted."
   },
   "smart": {
     "kicker": "A real browser, not a basic bot",
@@ -804,7 +809,13 @@
     "q7": "Why does AI readability matter?",
     "a7": "Your customers ask ChatGPT, Perplexity and Gemini before they ask Google. If AI can't read your site, you're invisible in the answers they trust — no matter how well you rank on classic search. isready.ai shows you exactly what every AI sees and the precise fixes to get cited.",
     "q8": "Can isready.ai open pull requests to fix issues automatically?",
-    "a8": "Yes, on Pro and Team plans. Add isreadyai/fix-action@v1 to a workflow with an ISREADYAI_API_KEY secret and permissions: contents: write, pull-requests: write plus id-token: write (the run also uploads the CI report and unlocks the repo badge); it scans the URL, runs an AI agent inside your own runner to apply the minimal fixes, and opens a pull request for you to review."
+    "a8": "Yes, on Pro and Team plans. Add isreadyai/fix-action@v1 to a workflow with an ISREADYAI_API_KEY secret and permissions: contents: write, pull-requests: write plus id-token: write (the run also uploads the CI report and unlocks the repo badge); it scans the URL, runs an AI agent inside your own runner to apply the minimal fixes, and opens a pull request for you to review.",
+    "q9": "Does a scan change my site?",
+    "a9": "No. It fetches the public URL and writes a report. The page stays as it is, and nothing is injected for an assistant to read instead.",
+    "q10": "Do you promise traffic from ChatGPT?",
+    "a10": "No. You get the score, what the crawler received, and a fix for each finding. A citation after that is outside the scan.",
+    "q11": "Does this only work on WordPress?",
+    "a11": "No. Paste any public URL. The same engine runs in the browser, from npx isreadyai, and in GitHub Actions."
   },
   "report": {
     "title": "AI readiness report",
