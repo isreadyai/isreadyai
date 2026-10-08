@@ -1,5 +1,7 @@
 import type { ICheckResult, IScanReport } from './types.ts'
 import type { ISiteReport } from './crawl.ts'
+import type { ICrawlerAccessRow } from './crawler-access.ts'
+import { crawlerAccessRows, EProbeOutcome, ERobotsRule } from './crawler-access.ts'
 import { hostOf } from './util/url.ts'
 import { templateKey } from './smart-agent/template-sample.ts'
 
@@ -80,6 +82,42 @@ function spliceClusters(base: string, block: string): string {
   return `${base.slice(0, idx)}\n\n${block}${base.slice(idx)}`
 }
 
+/** Builds the per-crawler access table, or nothing when the report has no robots data. */
+function crawlerAccessBlock(report: IScanReport): string[] {
+  const rows = crawlerAccessRows(report.checks)
+  if (rows === null) return []
+  return [
+    '## AI crawler access',
+    '',
+    '| Crawler | Operator | Purpose | robots.txt | Server response |',
+    '|---|---|---|---|---|',
+    ...rows.map(
+      (row) =>
+        `| ${row.token} | ${row.operator} | ${row.purpose} | ${robotsCell(row)} | ${serverCell(row)} |`,
+    ),
+    '',
+  ]
+}
+
+function robotsCell(row: ICrawlerAccessRow): string {
+  if (row.robots === ERobotsRule.NO_ROBOTS) return 'no robots.txt'
+  return row.robots
+}
+
+function serverCell(row: ICrawlerAccessRow): string {
+  const { probe } = row
+  if (probe === null) return 'not tested'
+  const base =
+    probe.outcome === EProbeOutcome.SERVED
+      ? `HTTP ${probe.status}`
+      : probe.outcome === EProbeOutcome.REFUSED
+        ? `refused (HTTP ${probe.status})`
+        : probe.outcome === EProbeOutcome.CHALLENGED
+          ? 'challenge page'
+          : 'no response'
+  return row.silentBlock ? `${base} ▲ silent block` : base
+}
+
 // MARK: - Human mode
 
 function humanMarkdown(report: IScanReport): string {
@@ -104,6 +142,7 @@ function humanMarkdown(report: IScanReport): string {
     lines.push(`| ${category.label} | ${category.score} | ${Math.round(category.weight * 100)}% |`)
   }
   lines.push('')
+  lines.push(...crawlerAccessBlock(report))
 
   if (failing.length > 0) {
     lines.push('## ✗ Failed checks')
@@ -200,6 +239,7 @@ function llmMarkdown(report: IScanReport): string {
     '5. Do not fabricate content: where a fix needs copy (descriptions, author names), derive it from the existing site content.',
   )
   lines.push('')
+  lines.push(...crawlerAccessBlock(report))
 
   const ordered = [...failing, ...warning]
   if (ordered.length === 0) {

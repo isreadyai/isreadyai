@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Probed the homepage as eight AI crawler user agents instead of GPTBot alone (score version 2026.10.1).
 - www.isready.ai now 301s to https://isready.ai once the host reaches the app.
 - Transactional and auth emails now follow the light or dark color scheme.
 - Bring-your-own model defaults now use grok-4.7, gpt-5.4-mini, gemini-3.5-flash and claude-sonnet-5-5.
