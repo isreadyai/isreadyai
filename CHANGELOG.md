@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added an AI readiness checker page that lists every check, the score bands and what the report contains.
 - Added contact-details and link-text checks and an informational feed check (score version 2026.10.2).
 - Added a first-party about page with company, licensing, product and contact facts.
 - Added a live research page with corpus statistics, the most common gaps, methods and limits.
