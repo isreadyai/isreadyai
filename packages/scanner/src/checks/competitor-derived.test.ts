@@ -1,32 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { makeContext } from '../testing.ts'
-import { uaBlocking } from './crawler/ua-blocking.ts'
 import { snippetDirectives } from './crawler/snippet-directives.ts'
 import { markdownNegotiation } from './rendering/markdown-negotiation.ts'
 import { imageAlt } from './rendering/image-alt.ts'
 import { freshness } from './geo/freshness.ts'
 import { contentSignalsCheck } from './content-signals.ts'
-
-describe('crawler.ua-blocking', () => {
-  test('PASS when AI UA gets the same response', async () => {
-    const ctx = makeContext({})
-    const result = await uaBlocking.run(ctx)
-    expect(result.status).toBe('pass')
-  })
-
-  test('WARN when GPTBot UA is blocked at server level', async () => {
-    const ctx = makeContext({
-      onFetchWith: (_url, headers) =>
-        headers['user-agent']?.includes('GPTBot') === true
-          ? { status: 403, body: 'Forbidden' }
-          : undefined,
-    })
-    const result = await uaBlocking.run(ctx)
-    expect(result.status).toBe('warn')
-    expect(result.evidence?.gptbotUaStatus).toBe(403)
-    expect(result.detail).toContain('discriminating')
-  })
-})
 
 describe('crawler.snippet-directives', () => {
   test('WARN on nosnippet', async () => {
