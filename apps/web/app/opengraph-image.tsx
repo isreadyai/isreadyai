@@ -3,7 +3,7 @@ import { allChecks } from '@isreadyai/scanner'
 
 // MARK: - OG image (static, generated at build)
 
-export const alt = 'isready.ai — The future is AI. Is your website ready for AI?'
+export const alt = 'isready.ai. Is your site ready for ChatGPT?'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -46,9 +46,9 @@ export default function OgImage() {
           letterSpacing: -3,
         }}
       >
-        <div style={{ display: 'flex', fontSize: 76 }}>The future is AI.</div>
-        <div style={{ display: 'flex', marginTop: 10, fontSize: 72 }}>
-          Is your&nbsp;<span style={{ color: '#b8f53d' }}>website</span>&nbsp;ready for AI?
+        <div style={{ display: 'flex', fontSize: 64 }}>Is your site ready for</div>
+        <div style={{ display: 'flex', marginTop: 10, fontSize: 76, color: '#b8f53d' }}>
+          ChatGPT?
         </div>
       </div>
       <div style={{ marginTop: 32, fontSize: 30, color: '#8a8a82', display: 'flex' }}>

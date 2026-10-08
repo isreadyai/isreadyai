@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated React to 19.3, supabase-js to 2.117.2, the Supabase CLI to 2.120.0, zod to 4.6.5 and next-intl to 4.14.9.
 - Switched local Supabase to the native stack backend and added a pg-delta declarative schema baseline exported from production.
 - Ignored local Firecrawl dumps and agent brief files.
+- Changed the homepage hero to name ChatGPT, Claude, Gemini and Perplexity, added a section on how Googlebot and AI crawlers read a page, and added three FAQ entries.
 
 ### Fixed
 

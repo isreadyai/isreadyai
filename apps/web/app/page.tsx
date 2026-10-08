@@ -51,7 +51,7 @@ export default async function HomePage({
   // null when Stripe isn't configured, so the table simply omits the amount.
   const prices = await getPlanPrices((await headers()).get('x-vercel-ip-country'))
 
-  const faqEntries = [7, 1, 2, 3, 4, 5, 6, 8].map((i) => ({
+  const faqEntries = [9, 10, 11, 7, 1, 2, 3, 4, 5, 6, 8].map((i) => ({
     question: t(`faq.q${i}`),
     answer: t(`faq.a${i}`),
   }))
@@ -112,8 +112,8 @@ export default async function HomePage({
       <main>
         <section id="home" className="relative overflow-hidden">
           <div className="bg-grid-faint absolute inset-0 -z-10" aria-hidden="true" />
-          <div className="site-container flex min-h-dvh flex-col items-center pt-24 pb-10 text-center">
-            <div className="flex w-full flex-1 flex-col items-center justify-center">
+          <div className="site-container flex flex-col items-center pt-28 pb-16 text-center">
+            <div className="flex w-full flex-col items-center">
               <Reveal>
                 <p className="border-site-border bg-site-surface/70 text-site-muted mb-6 inline-block rounded-full border px-4 py-1 font-mono text-[11px] tracking-wide sm:text-xs">
                   {t('hero.kicker', { count: allChecks.length })}
@@ -140,6 +140,33 @@ export default async function HomePage({
             <StatCounter value={AI_CRAWLERS.length} label={t('stats.crawlers')} />
             <StatCounter value={5} prefix="~" suffix="s" label={t('stats.seconds')} />
           </RevealOnScroll>
+        </section>
+
+        <section id="readers" className="border-site-border/60 scroll-mt-20 border-b">
+          <div className="site-container max-w-3xl py-16 sm:py-20">
+            <RevealOnScroll>
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                {t('readers.title')}
+              </h2>
+              <p className="text-site-muted mt-4 leading-relaxed">{t('readers.body')}</p>
+            </RevealOnScroll>
+            <RevealOnScroll staggerChildren className="mt-8 grid gap-4 sm:grid-cols-2">
+              <div className="border-site-border bg-site-surface/50 rounded-xl border p-5">
+                <p className="text-site-accent font-mono text-xs tracking-wide uppercase">
+                  {t('readers.googleLabel')}
+                </p>
+                <p className="text-site-text mt-2 text-sm leading-relaxed">
+                  {t('readers.googleBody')}
+                </p>
+              </div>
+              <div className="border-site-border bg-site-surface/50 rounded-xl border p-5">
+                <p className="text-site-accent font-mono text-xs tracking-wide uppercase">
+                  {t('readers.aiLabel')}
+                </p>
+                <p className="text-site-text mt-2 text-sm leading-relaxed">{t('readers.aiBody')}</p>
+              </div>
+            </RevealOnScroll>
+          </div>
         </section>
 
         <section id="smart-agent" className="border-site-border/60 scroll-mt-20 border-b">
