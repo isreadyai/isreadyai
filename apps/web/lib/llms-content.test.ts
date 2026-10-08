@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { AI_CRAWLERS, CATEGORY_WEIGHTS, ECategory } from '@isreadyai/scanner'
+import { SITE_URL } from '@/lib/site'
 import { llmsFullTxt, llmsTxt } from './llms-content'
 
 describe('llmsTxt', () => {
@@ -14,6 +15,7 @@ describe('llmsTxt', () => {
     expect(text).toContain('## Machine readable')
     expect(text).toContain('## Optional')
     expect(text).toContain('/llms-full.txt')
+    expect(text).toContain(`[Research](${SITE_URL}/research)`)
     expect(text).not.toMatch(/^### /m)
   })
 })

@@ -43,6 +43,9 @@ export async function SiteFooter({ bottomInset = false }: { bottomInset?: boolea
           <Link href="/terms-and-conditions" className="hover:text-site-text transition-colors">
             {t('terms')}
           </Link>
+          <Link href="/research" className="hover:text-site-text transition-colors">
+            {t('research')}
+          </Link>
           <Link href="/sitemap.xml" className="hover:text-site-text transition-colors">
             {t('sitemap')}
           </Link>

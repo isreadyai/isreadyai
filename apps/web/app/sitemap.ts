@@ -4,7 +4,15 @@ import { SITE_URL } from '@/lib/site'
 // MARK: - sitemap.xml
 
 // Public, indexable pages (dashboard/auth/report routes are noindex/dynamic).
-const PATHS = ['', '/pricing', '/privacy', '/terms-and-conditions', '/acknowledgements', '/contact']
+const PATHS = [
+  '',
+  '/pricing',
+  '/privacy',
+  '/terms-and-conditions',
+  '/acknowledgements',
+  '/contact',
+  '/research',
+]
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()

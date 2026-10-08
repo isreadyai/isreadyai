@@ -629,7 +629,8 @@
     "footnote": "Live from each site's latest on-demand scan, {from} to {to}. Monitoring re-scans are excluded.",
     "checks": "real checks",
     "crawlers": "AI crawlers tracked",
-    "seconds": "typical scan time"
+    "seconds": "typical scan time",
+    "methods": "Methods"
   },
   "readers": {
     "title": "Google can rank a page the assistants never read.",
@@ -1147,6 +1148,44 @@
     "retry": "Try again",
     "home": "Go home"
   },
+  "research": {
+    "metaTitle": "AI readiness research",
+    "metaDescription": "Live statistics from each site's latest isready.ai scan: scores, grades, crawler access and the most common gaps, with methods and limits.",
+    "kicker": "Research",
+    "title": "What we see across {sites} sites",
+    "titleEmpty": "Research",
+    "lead": "Live from each site's latest on-demand scan between {from} and {to}, refreshed every hour.",
+    "empty": "There are not enough scans yet to publish statistics. Check back soon.",
+    "medianLabel": "median score",
+    "notExcellentLabel": "of sites are not yet Excellent",
+    "uaRefusedLabel": "of sites answer AI crawlers differently than browsers",
+    "gapsTitle": "Most common gaps",
+    "gapsIntro": "Checks that most sites do not fully pass. A site counts when the check failed or warned on its latest scan.",
+    "gapsCaption": "Checks ranked by the share of sites where they failed or warned",
+    "colCheck": "Check",
+    "colSites": "Sites affected",
+    "colFailed": "Failed",
+    "colWarned": "Warned",
+    "ofSites": "{count} of {sites}",
+    "methodsTitle": "Methods",
+    "methods1": "Each site counts once, by its latest on-demand scan from the web form, the GitHub Action or the MCP endpoint.",
+    "methods2": "Monitoring re-scans are excluded, because they re-scan the same few monitored sites on a schedule.",
+    "methods3": "The score is the headline score shown on each report: Agent Readability, averaged with Smart Agent when that check ran.",
+    "methods4": "Informational results such as llms.txt are never counted as failures.",
+    "methods5": "Scans span several scanner versions. Until October 2026 the server probe sent only a GPTBot user agent; newer scans send eight AI user agents.",
+    "methods6": "No site, page or customer is identified. Only counts are published.",
+    "limitsTitle": "Limits",
+    "limits1": "The sample is self-selected: these are sites whose owners chose to test them with an AI readiness scanner, which skews toward technical teams.",
+    "limits2": "A scan covers the page that was submitted, usually the homepage, unless a deep scan was run.",
+    "limits3": "Statistics appear only once at least 30 sites are in the sample, and a check is listed only once at least 50 sites were tested for it.",
+    "cta": "Scan your site",
+    "datasetName": "isready.ai AI readiness scan statistics",
+    "datasetDescription": "Median score, grade distribution, server response to AI user agents and check outcomes across {sites} sites, from each site's latest on-demand isready.ai scan.",
+    "variable1": "Headline score (0 to 100)",
+    "variable2": "Grade",
+    "variable3": "Server response to AI user agents",
+    "variable4": "Check outcomes (failed, warned)"
+  },
   "footer": {
     "openSource": "© 2026 <company>Smart Squad S.r.l.</company> · Engine MIT, dashboard PolyForm Shield",
     "thanks": "Acknowledgements",
@@ -1158,6 +1197,8 @@
     "terms": "Terms",
     "sitemap": "Sitemap",
     "contact": "Contact",
+    "research": "Research",
+    "about": "About",
     "cookies": "Cookie preferences"
   },
   "contact": {
