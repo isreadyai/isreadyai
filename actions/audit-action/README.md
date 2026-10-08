@@ -199,8 +199,8 @@ Releases follow semantic versioning; the `v1` tag always points at the latest
 
 ## How it works
 
-The audit is powered by the open-source (MIT) isready.ai engine and CLI. This
-repository ships a pre-bundled, node-target build of that engine — it is generated
+The audit is powered by the MIT scanner and CLI. The web dashboard is source-available under PolyForm Shield 1.0.0. This
+repository ships a pre-bundled, node-target build of that engine. It is generated
 from the [`isreadyai/isreadyai`](https://github.com/isreadyai/isreadyai) monorepo,
 so please **open issues and PRs there**, not against the generated files here.
 
