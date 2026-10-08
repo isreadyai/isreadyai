@@ -612,8 +612,21 @@
       "subtitle": "LLM crawlers ignore half of what makes a page rank. isready.ai runs {count} real checks on what ChatGPT, Perplexity and Gemini actually extract — and gives you the exact fixes to get cited."
     }
   },
+  "grades": {
+    "title": "What each grade means",
+    "intro": "Grades come from the 0-100 score. The share next to each grade is live, from the sites in the stats above.",
+    "range": "{min} to {max}",
+    "share": "{percent}% of sites",
+    "excellentBody": "AI crawlers can reach, read and cite the page. Remaining findings are polish.",
+    "goodBody": "Readable by AI crawlers, with gaps that make the page less likely to be quoted.",
+    "moderateBody": "AI crawlers reach the page but miss important content or signals.",
+    "poorBody": "AI crawlers are blocked or find little they can use."
+  },
   "stats": {
-    "performed": "checks performed",
+    "sites": "sites scanned",
+    "notExcellent": "not yet Excellent",
+    "uaRefused": "answer AI crawlers differently than browsers",
+    "footnote": "Live from each site's latest on-demand scan, {from} to {to}. Monitoring re-scans are excluded.",
     "checks": "real checks",
     "crawlers": "AI crawlers tracked",
     "seconds": "typical scan time"
@@ -1024,6 +1037,8 @@
     "expandAll": "Expand all",
     "collapseAll": "Collapse all",
     "backToFullReport": "Back to the full score — scroll to top",
+    "nextGrade": "{gap, plural, one {# point} other {# points}} to {grade}.",
+    "nextGradeGains": "Biggest gains: <list></list>.",
     "grade": {
       "excellent": "Excellent",
       "good": "Good",
