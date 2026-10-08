@@ -32,9 +32,9 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@clack/prompts": "^1.7.0",
+    "@clack/prompts": "^1.8.1",
     "@isreadyai/scanner": "workspace:*",
-    "@types/bun": "^1.4.0",
+    "@types/bun": "^1.4.2",
     "typescript": "~7.0.2"
   }
 }
