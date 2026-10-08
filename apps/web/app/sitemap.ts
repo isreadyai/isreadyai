@@ -13,6 +13,7 @@ const PATHS = [
   '/contact',
   '/research',
   '/about',
+  '/ai-readiness-checker',
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {

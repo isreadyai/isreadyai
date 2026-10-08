@@ -1,4 +1,4 @@
-import { gradeOf, isScanReport } from '@isreadyai/scanner'
+import { allChecks, gradeOf, isScanReport } from '@isreadyai/scanner'
 import type { Tables } from '@isreadyai/supabase'
 import { createServiceClient } from '@isreadyai/supabase'
 import { getTranslations } from 'next-intl/server'
@@ -152,7 +152,7 @@ export default async function DashboardOverviewPage() {
   return (
     <DashboardPage title={t('overview')}>
       <div className="space-y-6">
-        <OnboardingPanel isPaid={isPaidPlan(plan)} />
+        <OnboardingPanel isPaid={isPaidPlan(plan)} checkCount={allChecks.length} />
 
         {unreadAlerts > 0 ? (
           <PageBanner

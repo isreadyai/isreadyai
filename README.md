@@ -313,7 +313,7 @@ Informational signals (`llms.txt`, robots.txt Content Signals) are reported on e
 
 ## Roadmap
 
-- [x] Scanner engine — 32 checks, 5 categories, versioned scoring
+- [x] Scanner engine — checks across 5 categories, versioned scoring
 - [x] CLI — `npx isreadyai <url>` with `--json`, `--md` and `--llm` (AI-agent fix plan)
 - [x] Web scanner with shareable reports (zero-config local mode)
 - [x] Downloadable reports: human Markdown, AI-agent fix plan, raw JSON

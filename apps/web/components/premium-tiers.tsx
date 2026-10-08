@@ -1,3 +1,4 @@
+import { allChecks } from '@isreadyai/scanner'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
@@ -153,9 +154,7 @@ export function PremiumTiers({
                 <TierRow
                   key={row.key}
                   row={row}
-                  label={
-                    row.key === 'fDeepScan' ? t(row.key, { limit: deepScanLimit() }) : t(row.key)
-                  }
+                  label={t(row.key, { limit: deepScanLimit(), count: allChecks.length })}
                   soonLabel={t('soon')}
                   markLabels={markLabels}
                 />
