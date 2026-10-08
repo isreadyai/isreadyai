@@ -49,10 +49,10 @@ export async function sendWeeklyReportEmail(
 
 function shell(host: string, reportUrl: string, heading: string, lead: string): string {
   return emailShell(`<h1 style="font-size:20px;margin:16px 0 8px">${heading}</h1>
-      <p style="font-size:14px;line-height:1.6;color:#9a9a92">${lead}</p>
+      <p class="ir-muted" style="font-size:14px;line-height:1.6;color:#9a9a92">${lead}</p>
       <p style="font-size:14px;line-height:1.6">The full report is attached as a <strong>PDF</strong>, plus <strong>${host}-report.md</strong> &mdash; ready to hand to an AI coding agent to apply the fixes. Live version:
-        <a href="${reportUrl}" style="color:#b8f53d">${reportUrl}</a>.</p>
-      <p style="font-size:12px;color:#6b6b64;margin-top:32px">Manage alerts in your isready.ai notification settings.</p>`)
+        <a class="ir-link" href="${reportUrl}" style="color:#b8f53d">${reportUrl}</a>.</p>
+      <p class="ir-faint" style="font-size:12px;color:#6b6b64;margin-top:32px">Manage alerts in your isready.ai notification settings.</p>`)
 }
 
 function alertHtml(

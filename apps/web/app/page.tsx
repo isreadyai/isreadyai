@@ -11,6 +11,7 @@ import { PremiumTiers } from '@/components/premium-tiers'
 import { ProductHuntBadge } from '@/components/product-hunt-badge'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
+import { ScoreWeightTable } from '@/components/score-weight-table'
 import { HeroCopy } from '@/components/hero-copy'
 import { Reveal } from '@/components/motion/reveal'
 import { RevealOnScroll } from '@/components/motion/reveal-on-scroll'
@@ -311,6 +312,9 @@ export default async function HomePage({
                   </p>
                 </article>
               ))}
+            </RevealOnScroll>
+            <RevealOnScroll className="mt-10">
+              <ScoreWeightTable />
             </RevealOnScroll>
           </div>
         </section>

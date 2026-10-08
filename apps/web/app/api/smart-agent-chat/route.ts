@@ -8,7 +8,7 @@ import {
 } from 'ai'
 import type { LanguageModel, UIMessage } from 'ai'
 import { z } from 'zod'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 import { clientIp } from '@/lib/client-ip'
 import { recordUsage, usageThisMonth, type TOwnerRef } from '@/lib/ai-usage'
 import { apiKeyOwnerId, verifyApiKey } from '@/lib/api-keys'
@@ -70,7 +70,7 @@ export async function POST(request: Request): Promise<Response> {
   // The per-IP rate limit applies to BYO too: it guards our infra (scan store,
   // persistence, request volume), independent of who pays for inference.
   const ipHash = await hashValue(clientIp(request))
-  if (!(await consumeRateLimit(ipHash, RATE_WINDOW_MS, RATE_LIMIT))) {
+  if (!(await consumeRateLimit(ERateLimitScope.CHAT, ipHash, RATE_WINDOW_MS, RATE_LIMIT))) {
     return errorResponse('rate_limited', 'Too many questions. Wait a minute and try again.', 429)
   }
 

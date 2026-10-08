@@ -1,3 +1,6 @@
+import { findApiKeyById } from '@/lib/api-keys'
+import { isPaidPlan } from '@/lib/plans'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 import { solveSecret, verifySolveToken } from '@/lib/solve-token'
 
 // MARK: - POST /api/solve-inference
@@ -20,6 +23,8 @@ export const maxDuration = 300
 const MAX_OUTPUT_TOKENS = 16_384
 const MAX_INPUT_BYTES = 100_000
 const GATEWAY_BASE_URL = process.env.AI_GATEWAY_BASE_URL ?? 'https://ai-gateway.vercel.sh/v1'
+// Epoch-aligned fixed window: a 15-minute token straddles at most one boundary (at most 2x calls).
+const CALL_BUDGET_WINDOW_MS = 24 * 60 * 60 * 1000
 
 // Only these request fields are forwarded. Everything else (notably `n`, which
 // multiplies billed completions) is dropped so a runner cannot amplify cost.
@@ -64,10 +69,6 @@ export function sanitizeInferenceBody(
   return forwarded
 }
 
-// Per-token (jti) call budget. In-memory + best-effort: a cold start resets it,
-// but the 15-minute token TTL bounds total exposure regardless.
-const callCounts = new Map<string, number>()
-
 function jsonError(code: string, status: number, extra?: Record<string, unknown>): Response {
   return Response.json({ error: code, ...extra }, { status })
 }
@@ -96,11 +97,21 @@ export async function POST(request: Request): Promise<Response> {
     return jsonError('invalid_token', 401)
   }
 
-  const used = callCounts.get(claims.jti) ?? 0
-  if (used >= claims.calls) {
+  const key = await findApiKeyById(claims.sub)
+  if (key === null || !isPaidPlan(key.plan)) {
+    return jsonError('invalid_token', 401)
+  }
+
+  if (
+    !(await consumeRateLimit(
+      ERateLimitScope.SOLVE_INFERENCE,
+      claims.jti,
+      CALL_BUDGET_WINDOW_MS,
+      claims.calls,
+    ))
+  ) {
     return jsonError('call_budget_exceeded', 429)
   }
-  callCounts.set(claims.jti, used + 1)
 
   let body: Record<string, unknown>
   try {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@isreadyai/supabase'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { consumeRateLimit, ERateLimitScope } from '@/lib/rate-limit'
 import { apiKeyOwnerId, verifyApiKey } from '@/lib/api-keys'
 import { sendFixPrEmail } from '@/lib/email-fix'
 import { isPaidPlan } from '@/lib/plans'
@@ -109,7 +109,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 403 },
     )
   }
-  if (!(await consumeRateLimit(key.id, RATE_WINDOW_MS, RATE_LIMIT))) {
+  if (!(await consumeRateLimit(ERateLimitScope.FIX_NOTIFY, key.id, RATE_WINDOW_MS, RATE_LIMIT))) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
