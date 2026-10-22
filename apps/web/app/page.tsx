@@ -2,6 +2,9 @@ import { getTranslations } from 'next-intl/server'
 import { headers } from 'next/headers'
 import { AI_CRAWLERS, allChecks } from '@isreadyai/scanner'
 import { getPlanPrices } from '@/lib/plan-prices'
+import { CORPUS_MIN_SITES, loadCorpusStats } from '@/lib/scan-corpus'
+import { dayjs } from '@/lib/dayjs'
+import { GradeBands } from '@/components/grade-bands'
 import { ScanForm } from '@/components/scan-form'
 import { CliShowcase, HeroCommand } from '@/components/cli-showcase'
 import { FaqItem } from '@/components/faq-item'
@@ -25,7 +28,6 @@ import {
   SMART_CATEGORY_ORDER,
   SMART_SCORE_SOURCE_URL,
 } from '@/lib/check-category-docs'
-import { getScanStore } from '@/lib/scan-store.ts'
 import { parseMkt } from '@/lib/mkt'
 import { GITHUB_URL, SITE_NAME, SITE_URL } from '@/lib/site'
 
@@ -44,12 +46,10 @@ export default async function HomePage({
 
   const mkt = parseMkt((await searchParams).mkt)
 
-  const store = await getScanStore()
-  const checksPerformed = (await store.countCompletedScans()) * allChecks.length
-
-  // Localised plan prices in the reader's currency (Stripe currency_options);
-  // null when Stripe isn't configured, so the table simply omits the amount.
-  const prices = await getPlanPrices((await headers()).get('x-vercel-ip-country'))
+  const [corpus, prices] = await Promise.all([
+    loadCorpusStats(),
+    getPlanPrices((await headers()).get('x-vercel-ip-country')),
+  ])
 
   const faqEntries = [9, 10, 11, 7, 1, 2, 3, 4, 5, 6, 8].map((i) => ({
     question: t(`faq.q${i}`),
@@ -133,13 +133,39 @@ export default async function HomePage({
         <section aria-label="Key numbers" className="border-site-border/60 border-y">
           <RevealOnScroll
             staggerChildren
-            className="site-container grid grid-cols-2 gap-x-4 gap-y-6 py-8 text-center sm:grid-cols-4 sm:gap-6"
+            className="site-container grid grid-cols-2 gap-x-4 gap-y-6 py-8 text-center sm:grid-cols-3 sm:gap-6"
           >
-            <StatCounter value={checksPerformed} label={t('stats.performed')} />
+            {corpus !== null ? (
+              <>
+                <StatCounter value={corpus.sites} label={t('stats.sites')} />
+                <StatCounter
+                  value={Math.round(
+                    (100 * (corpus.sites - corpus.grades.excellent)) / corpus.sites,
+                  )}
+                  suffix="%"
+                  label={t('stats.notExcellent')}
+                />
+                {corpus.uaRefused.sites >= CORPUS_MIN_SITES ? (
+                  <StatCounter
+                    value={Math.round((100 * corpus.uaRefused.refused) / corpus.uaRefused.sites)}
+                    suffix="%"
+                    label={t('stats.uaRefused')}
+                  />
+                ) : null}
+              </>
+            ) : null}
             <StatCounter value={allChecks.length} label={t('stats.checks')} />
             <StatCounter value={AI_CRAWLERS.length} label={t('stats.crawlers')} />
             <StatCounter value={5} prefix="~" suffix="s" label={t('stats.seconds')} />
           </RevealOnScroll>
+          {corpus !== null ? (
+            <p className="text-site-faint site-container pb-6 text-center font-mono text-xs">
+              {t('stats.footnote', {
+                from: dayjs(corpus.from).format('MMM D, YYYY'),
+                to: dayjs(corpus.to).format('MMM D, YYYY'),
+              })}
+            </p>
+          ) : null}
         </section>
 
         <section id="readers" className="border-site-border/60 scroll-mt-20 border-b">
@@ -342,6 +368,9 @@ export default async function HomePage({
             </RevealOnScroll>
             <RevealOnScroll className="mt-10">
               <ScoreWeightTable />
+            </RevealOnScroll>
+            <RevealOnScroll className="mt-10">
+              <GradeBands grades={corpus?.grades ?? null} sites={corpus?.sites ?? null} />
             </RevealOnScroll>
           </div>
         </section>

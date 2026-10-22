@@ -8,7 +8,13 @@ import type {
 } from '@isreadyai/scanner'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { aggregateSiteFindings, crawlerAccessRows, ECategory, gradeOf } from '@isreadyai/scanner'
+import {
+  aggregateSiteFindings,
+  crawlerAccessRows,
+  ECategory,
+  gradeOf,
+  pointsToNextGrade,
+} from '@isreadyai/scanner'
 import { aiSearchScore, combinedScore, deepTrackScore, smartTrackScore } from '@/lib/score'
 import { deepScanLimit } from '@/lib/deep-scan'
 import { recallScanWriteToken, rememberScanWriteToken } from '@/lib/scan-write-token-client'
@@ -439,6 +445,7 @@ export function ReportView({
   // Derive the grade from the SHOWN score so the ring/label colour always matches.
   const grade = gradeOf(overall)
   const categories = site?.categories ?? report.categories
+  const nextGrade = site === null ? pointsToNextGrade(categories, report.overall) : null
 
   // A persisted dashboard scan opened from history is read-only: running deep /
   // smart-deep would mutate the saved record. The fresh-scan flow arrives with
@@ -649,6 +656,7 @@ export function ReportView({
         score={aiSearchScore({ base: report.overall, deep: deepScore })}
         categories={categories}
         deep={site !== null}
+        nextGrade={nextGrade}
         pending={deepPending}
       />
 

@@ -9,10 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added a points-to-next-grade hint with the three biggest gains to the report.
+- Added a points-to-next-grade breakdown to the scanner's scoring API.
 - Added a per-crawler table to the report that shows each AI crawler's robots.txt rule next to the server's actual response.
 
 ### Changed
 
+- Replaced the homepage checks-performed counter with live stats from each site's latest on-demand scan and added a grade-band explainer.
 - Probed the homepage as eight AI crawler user agents instead of GPTBot alone (score version 2026.10.1).
 
 ## [1.2.0] - 2026-10-08
