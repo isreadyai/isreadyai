@@ -1,6 +1,6 @@
 {
   "name": "isreadyai",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "private": true,
   "description": "Is Ready for AI — audit whether a website or SaaS is readable, crawlable and optimized for LLMs and AI search engines.",
   "license": "SEE LICENSE IN LICENSE",
@@ -42,7 +42,7 @@
     "exits": "^2.0.1",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.72.0",
-    "turbo": "^2.10.3",
+    "turbo": "^2.11.7",
     "typescript": "~7.0.2"
   },
   "overrides": {
