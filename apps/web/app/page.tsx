@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import { headers } from 'next/headers'
+import Link from 'next/link'
 import { AI_CRAWLERS, allChecks } from '@isreadyai/scanner'
 import { getPlanPrices } from '@/lib/plan-prices'
 import { CORPUS_MIN_SITES, loadCorpusStats } from '@/lib/scan-corpus'
@@ -12,6 +13,7 @@ import { GithubShowcase } from '@/components/github-showcase'
 import { SmartAgentShowcase } from '@/components/smart-agent-showcase'
 import { PremiumTiers } from '@/components/premium-tiers'
 import { ProductHuntBadge } from '@/components/product-hunt-badge'
+import { JsonLdScript } from '@/components/json-ld-script'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { ScoreWeightTable } from '@/components/score-weight-table'
@@ -29,7 +31,8 @@ import {
   SMART_SCORE_SOURCE_URL,
 } from '@/lib/check-category-docs'
 import { parseMkt } from '@/lib/mkt'
-import { GITHUB_URL, SITE_NAME, SITE_URL } from '@/lib/site'
+import { organizationNode, websiteNode } from '@/lib/json-ld'
+import { SITE_URL } from '@/lib/site'
 
 // MARK: - Landing page (dogfood: SSG, semantic HTML, full JSON-LD)
 
@@ -163,7 +166,10 @@ export default async function HomePage({
               {t('stats.footnote', {
                 from: dayjs(corpus.from).format('MMM D, YYYY'),
                 to: dayjs(corpus.to).format('MMM D, YYYY'),
-              })}
+              })}{' '}
+              <Link href="/research" className="text-site-accent hover:underline">
+                {t('stats.methods')}
+              </Link>
             </p>
           ) : null}
         </section>
@@ -619,23 +625,8 @@ function JsonLd({ faq }: { faq: { question: string; answer: string }[] }) {
   const graph = {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'Organization',
-        '@id': `${SITE_URL}/#org`,
-        name: SITE_NAME,
-        url: SITE_URL,
-        logo: `${SITE_URL}/icon.svg`,
-        sameAs: [GITHUB_URL],
-      },
-      {
-        '@type': 'WebSite',
-        '@id': `${SITE_URL}/#website`,
-        name: SITE_NAME,
-        url: SITE_URL,
-        publisher: { '@id': `${SITE_URL}/#org` },
-        datePublished: '2026-06-15',
-        dateModified: new Date().toISOString(),
-      },
+      organizationNode(),
+      websiteNode(),
       {
         '@type': 'SoftwareApplication',
         name: 'isready.ai — AI readiness scanner',
@@ -655,11 +646,5 @@ function JsonLd({ faq }: { faq: { question: string; answer: string }[] }) {
       },
     ],
   }
-  return (
-    <script
-      type="application/ld+json"
-      // eslint-disable-next-line react/no-danger -- static, server-built JSON
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }}
-    />
-  )
+  return <JsonLdScript data={graph} />
 }
