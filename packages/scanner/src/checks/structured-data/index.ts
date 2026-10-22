@@ -3,6 +3,7 @@ import { jsonLdCheck } from './json-ld.ts'
 import { metaBasicsCheck } from './meta-basics.ts'
 import { openGraphCheck } from './open-graph.ts'
 import { authorEeatCheck } from './author-eeat.ts'
+import { contactDetailsCheck } from './contact-details.ts'
 import { langHreflangCheck } from './lang-hreflang.ts'
 
 // MARK: - Structured-data check family
@@ -12,5 +13,6 @@ export const structuredDataChecks: ICheck[] = [
   metaBasicsCheck,
   openGraphCheck,
   authorEeatCheck,
+  contactDetailsCheck,
   langHreflangCheck,
 ]

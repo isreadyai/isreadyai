@@ -24,7 +24,7 @@ const STEPS: { key: string; icon: TStepIcon }[] = [
 // so the upsell copy stays in sync with what the plan actually unlocks.
 const PRO_PROPS = ['proResolution', 'proAsk', 'proBadge', 'proMonitoring', 'proHistory'] as const
 
-export function OnboardingPanel({ isPaid }: { isPaid: boolean }) {
+export function OnboardingPanel({ isPaid, checkCount }: { isPaid: boolean; checkCount: number }) {
   const t = useTranslations('onboarding')
   const [dismissed, setDismissed] = useState<boolean | null>(null)
 
@@ -130,7 +130,7 @@ export function OnboardingPanel({ isPaid }: { isPaid: boolean }) {
                   {t(`${step.key}.title`)}
                 </p>
                 <p className="text-site-muted mt-0.5 text-xs leading-relaxed">
-                  {t(`${step.key}.body`)}
+                  {t(`${step.key}.body`, { count: checkCount })}
                 </p>
               </div>
             </li>

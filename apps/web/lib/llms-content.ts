@@ -27,6 +27,7 @@ const PRODUCT = `## Product
 - [Web scanner](${SITE_URL}): Enter a URL, get a scored 0-100 report with concrete fixes, or run \`npx isreadyai <url>\`.
 - [Pricing](${SITE_URL}/pricing): Start free. Upgrade when you want monitoring, the Ask-your-site chat and automated fixes across your sites.
 - [Research](${SITE_URL}/research): Live statistics from each site's latest scan, with methods and limits.
+- [AI readiness checker](${SITE_URL}/ai-readiness-checker): What the free checker tests, how the score works and what the report contains.
 - [About](${SITE_URL}/about): Who makes isready.ai, what it checks, how to run it, licensing and contact.
 - [Contact](${SITE_URL}/contact): Feedback, a bug report, or a fraudulent domain claim.`
 

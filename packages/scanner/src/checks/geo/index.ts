@@ -5,6 +5,7 @@ import { statisticsCitationsCheck } from './statistics-citations.ts'
 import { contentNoiseCheck } from './content-noise.ts'
 import { freshness } from './freshness.ts'
 import { extractabilityCheck } from './extractability.ts'
+import { linkTextCheck } from './link-text.ts'
 
 // MARK: - GEO content family
 
@@ -20,4 +21,5 @@ export const geoChecks: ICheck[] = [
   contentNoiseCheck,
   freshness,
   extractabilityCheck,
+  linkTextCheck,
 ]

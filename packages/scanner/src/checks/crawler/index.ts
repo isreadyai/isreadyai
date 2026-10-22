@@ -10,6 +10,7 @@ import { noindexCheck } from './noindex.ts'
 import { wwwConsistencyCheck } from './www-consistency.ts'
 import { uaBlocking } from './ua-blocking.ts'
 import { snippetDirectives } from './snippet-directives.ts'
+import { feedCheck } from './feed.ts'
 
 // MARK: - Crawler access check family
 
@@ -25,4 +26,5 @@ export const crawlerChecks: ICheck[] = [
   wwwConsistencyCheck,
   uaBlocking,
   snippetDirectives,
+  feedCheck,
 ]

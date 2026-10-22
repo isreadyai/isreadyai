@@ -24,6 +24,32 @@ export interface IMetaTag {
   content?: string
 }
 
+/**
+ * Parsed <a> element: raw href, visible text and an accessible label fallback.
+ *
+ * @export
+ * @interface IAnchor
+ * @typedef {IAnchor}
+ */
+export interface IAnchor {
+  href: string
+  text: string
+  label: string
+}
+
+/**
+ * Parsed <link> element attributes relevant to discovery (rel, type, href).
+ *
+ * @export
+ * @interface ILinkTag
+ * @typedef {ILinkTag}
+ */
+export interface ILinkTag {
+  rel: string
+  type: string
+  href: string
+}
+
 const TAG_RE = (tag: string) => new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, 'gi')
 
 /**
@@ -234,7 +260,70 @@ export function hasHreflang(html: string): boolean {
   return /<link\b[^>]*\bhreflang=["'][^"']+["'][^>]*>/i.test(html)
 }
 
+/**
+ * Extract all <a> elements with their href, visible text and label.
+ *
+ * The label is the aria-label or title attribute, else the alt of an inner
+ * <img>, else an empty string. Anchors without an href are skipped.
+ *
+ * @param {string} html - The HTML string to parse.
+ * @returns {IAnchor[]} Array of parsed anchors in document order.
+ * @export
+ */
+export function extractAnchors(html: string): IAnchor[] {
+  const out: IAnchor[] = []
+  const re = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html)) !== null) {
+    const attrs = m[1] ?? ''
+    const inner = m[2] ?? ''
+    const href = attrValue(attrs, 'href')
+    if (href === undefined) {
+      continue
+    }
+    const imgAttrs = /<img\b([^>]*)>/i.exec(inner)?.[1] ?? ''
+    const label = (
+      attrValue(attrs, 'aria-label') ||
+      attrValue(attrs, 'title') ||
+      attrValue(imgAttrs, 'alt') ||
+      ''
+    )
+      .replace(/\s+/g, ' ')
+      .trim()
+    out.push({ href: href.trim(), text: htmlToText(inner), label })
+  }
+  return out
+}
+
+/**
+ * Extract all <link> elements with their rel, type and href attributes.
+ *
+ * @param {string} html - The HTML string to parse.
+ * @returns {ILinkTag[]} Array of parsed link tags; missing attributes become ''.
+ * @export
+ */
+export function extractLinkTags(html: string): ILinkTag[] {
+  const out: ILinkTag[] = []
+  const re = /<link\b([^>]*)>/gi
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html)) !== null) {
+    const attrs = m[1] ?? ''
+    out.push({
+      rel: attrValue(attrs, 'rel') ?? '',
+      type: attrValue(attrs, 'type') ?? '',
+      href: attrValue(attrs, 'href') ?? '',
+    })
+  }
+  return out
+}
+
 // MARK: - internal
+
+function attrValue(attrs: string, name: string): string | undefined {
+  const re = new RegExp(`(?:^|[\\s"'])${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+))`, 'i')
+  const m = re.exec(attrs)
+  return m?.[1] ?? m?.[2] ?? m?.[3]
+}
 
 function attr(attrs: string, name: string): string | undefined {
   const re = new RegExp(`\\b${name}=["']([^"']*)["']`, 'i')

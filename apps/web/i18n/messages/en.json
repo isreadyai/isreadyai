@@ -77,7 +77,7 @@
     "subtitle": "Here's everything you can do from here.",
     "stepScan": {
       "title": "Run a scan",
-      "body": "Audit any URL against 32 agent-readability checks across 5 dimensions, including a real-browser agent check."
+      "body": "Audit any URL against {count} agent-readability checks across 5 dimensions, including a real-browser agent check."
     },
     "stepTrack": {
       "title": "Track a site",
@@ -504,7 +504,7 @@
     "ctaFree": "Start free",
     "ctaPaid": "Get {plan}",
     "reassurance": "Free plan needs no card · Secure checkout via Stripe · Cancel anytime",
-    "fAudit": "Agent Readability audit — 32 checks, 5 dimensions",
+    "fAudit": "Agent Readability audit — {count} checks, 5 dimensions",
     "fDeepScan": "Deep scan — sitemap + links · up to {limit} pages",
     "fSmartCheck": "Browser-capable agent check (Smart Agent readability)",
     "fResolution": "Resolution plan — a concrete fix for every finding",
@@ -668,7 +668,7 @@
     "step2Title": "Read what they read",
     "step2Body": "We parse the raw HTML exactly as GPTBot and ClaudeBot do — no JavaScript, because they don't run it either. Empty app shells and content that only appears after hydration get flagged.",
     "step3Title": "Score and fix",
-    "step3Body": "32 evidence-based checks across 5 dimensions produce a 0–100 score, and every finding ships with a concrete fix, impact and effort."
+    "step3Body": "{count} evidence-based checks across 5 dimensions produce a 0–100 score, and every finding ships with a concrete fix, impact and effort."
   },
   "checks": {
     "title": "What we check",
@@ -735,7 +735,7 @@
     "stat1Label": "more visible with quotations",
     "stat2Label": "with added statistics",
     "stat3Label": "when citing credible sources",
-    "p3": "Meanwhile, one misconfigured header can erase you: Cloudflare's AI-bot blocking now protects millions of sites, and many owners don't realize it also removes them from ChatGPT and Perplexity answers. Independent server-log studies show 2.5 million+ websites already disallow AI training — a legitimate choice, but one that should be made deliberately, not by accident. That is exactly what this scanner makes visible: 32 evidence-based checks, each with the observed value, the consequence, and the precise fix.",
+    "p3": "Meanwhile, one misconfigured header can erase you: Cloudflare's AI-bot blocking now protects millions of sites, and many owners don't realize it also removes them from ChatGPT and Perplexity answers. Independent server-log studies show 2.5 million+ websites already disallow AI training — a legitimate choice, but one that should be made deliberately, not by accident. That is exactly what this scanner makes visible: {count} evidence-based checks, each with the observed value, the consequence, and the precise fix.",
     "sourcesLabel": "Primary sources",
     "source1": "GEO research paper (arXiv)",
     "source2": "OpenAI crawler documentation",
@@ -1148,6 +1148,53 @@
     "retry": "Try again",
     "home": "Go home"
   },
+  "checker": {
+    "metaTitle": "AI readiness checker",
+    "metaDescription": "Free check of whether ChatGPT, Claude, Perplexity and Google AI features can reach, read and cite your site, with a score from 0 to 100 and a fix for every finding.",
+    "kicker": "Free · open source · {count} checks",
+    "title": "AI readiness checker",
+    "lead": "See what ChatGPT, Claude, Perplexity and Google's AI features can reach and read on your site, and the fix for every gap.",
+    "note": "No signup. About 5 seconds. Shareable report.",
+    "testsTitle": "What the checker tests",
+    "infoTitle": "Reported, never scored",
+    "infoBody": "These signals are shown in every report for context. They never change the score.",
+    "scoreTitle": "How the score works",
+    "getTitle": "What you get back",
+    "get1": "A score from 0 to 100 and a grade.",
+    "get2": "Every finding with the evidence found on your page, the fix, its impact and the effort.",
+    "get3": "A table of {probed} AI crawlers: what your robots.txt allows and what your server returned to each.",
+    "get4": "PDF and Markdown downloads, and the report by email.",
+    "get5": "A shareable report link.",
+    "get6": "The same audit in your terminal with npx isreadyai, with --json and an --llm fix plan for coding agents.",
+    "enginesTitle": "How AI engines read your site",
+    "enginesIntro": "Each assistant documents its own crawlers. The checker tests access for every token below, and these are the vendors' own descriptions.",
+    "newTab": "(opens in a new tab)",
+    "chatgpt": {
+      "name": "ChatGPT",
+      "body": "OpenAI documents three crawlers. <code>GPTBot</code> collects training data, <code>OAI-SearchBot</code> powers ChatGPT search results, and <code>ChatGPT-User</code> fetches pages for user actions in ChatGPT.",
+      "source": "OpenAI bots documentation"
+    },
+    "claude": {
+      "name": "Claude",
+      "body": "Anthropic documents three crawlers. <code>ClaudeBot</code> collects training content, <code>Claude-SearchBot</code> crawls to improve search results, and <code>Claude-User</code> retrieves pages when a Claude user's question needs it.",
+      "source": "Anthropic crawler documentation"
+    },
+    "perplexity": {
+      "name": "Perplexity",
+      "body": "<code>PerplexityBot</code> indexes pages for Perplexity search results, and <code>Perplexity-User</code> fetches pages for user actions in Perplexity.",
+      "source": "Perplexity bots documentation"
+    },
+    "google": {
+      "name": "Google AI Overviews and AI Mode",
+      "body": "To be shown as a supporting link in AI Overviews or AI Mode, a page must be indexed and eligible to be shown in Google Search with a snippet. Google also says:",
+      "quote": "You don't need to create new machine readable files, AI text files, or markup to appear in these features.",
+      "quoteSource": "Google Search Central, AI features and your website",
+      "note": "Google states that <code>Google-Extended</code> does not impact a site's inclusion in Google Search nor is it used as a ranking signal in Google Search.",
+      "sourceFeatures": "Google AI features documentation",
+      "sourceCrawlers": "Google common crawlers documentation"
+    },
+    "cta": "Scan your site"
+  },
   "research": {
     "metaTitle": "AI readiness research",
     "metaDescription": "Live statistics from each site's latest isready.ai scan: scores, grades, crawler access and the most common gaps, with methods and limits.",
@@ -1240,6 +1287,7 @@
     "sitemap": "Sitemap",
     "contact": "Contact",
     "research": "Research",
+    "checker": "AI readiness checker",
     "about": "About",
     "cookies": "Cookie preferences"
   },

@@ -16,7 +16,7 @@ import { CATEGORY_LABELS, ECategory, EGrade } from './types.ts'
  *
  * @export
  */
-export const SCORE_VERSION = '2026.10.1'
+export const SCORE_VERSION = '2026.10.2'
 
 /**
  * Category weight distribution: influence of each audit dimension on overall score.
