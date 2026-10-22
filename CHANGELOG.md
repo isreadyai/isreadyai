@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a points-to-next-grade hint with the three biggest gains to the report.
 - Added a points-to-next-grade breakdown to the scanner's scoring API.
 - Added a per-crawler table to the report that shows each AI crawler's robots.txt rule next to the server's actual response.
+
+### Changed
+
+- Replaced the homepage checks-performed counter with live stats from each site's latest on-demand scan and added a grade-band explainer.
+- Probed the homepage as eight AI crawler user agents instead of GPTBot alone (score version 2026.10.1).
+
+## [1.2.0] - 2026-10-08
+
+### Added
+
 - Added a Cloudflare checklist for the missing `www.isready.ai` DNS record.
 - Added a homepage table of the five scored dimension weights.
 - Added `/llms-full.txt` and expanded `/llms.txt` into llmstxt.org file lists.
@@ -24,8 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Replaced the homepage checks-performed counter with live stats from each site's latest on-demand scan and added a grade-band explainer.
-- Probed the homepage as eight AI crawler user agents instead of GPTBot alone (score version 2026.10.1).
 - www.isready.ai now 301s to https://isready.ai once the host reaches the app.
 - Transactional and auth emails now follow the light or dark color scheme.
 - Bring-your-own model defaults now use grok-4.7, gpt-5.4-mini, gemini-3.5-flash and claude-sonnet-5-5.
@@ -34,16 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switched local Supabase to the native stack backend and added a pg-delta declarative schema baseline exported from production.
 - Ignored local Firecrawl dumps and agent brief files.
 - Changed the homepage hero to name ChatGPT, Claude, Gemini and Perplexity, added a section on how Googlebot and AI crawlers read a page, and added three FAQ entries.
-
-### Fixed
-
 - Kept Supabase migration and pgTAP tests on the legacy Docker CLI in CI while preserving the experimental stack for local development.
 - Removed email background gradients so dark-mode mail clients can adapt backgrounds together with text.
 - Fixed the author X badges in the project and action READMEs.
 - Formatted the Supabase auth email templates so the oxfmt check passes.
-
-### Security
-
 - Raised the dompurify, postcss, undici, sharp, source-map-js, tinypool and baseline-browser-mapping overrides so `bun audit` passes.
 - Rejected control characters and backslashes in post-login `next` redirects, which let `/%09/evil.tld` leave the site.
 - Gave each route its own rate-limit bucket, so deep-scan proxy calls no longer use up the report-email limit.
