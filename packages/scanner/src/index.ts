@@ -50,6 +50,7 @@ export {
   readinessHeadlineScore,
   type IReadinessScoreTracks,
 } from './score.ts'
+export * from './crawler-access.ts'
 export * from './crawlers.ts'
 export * from './smart-agent/index.ts'
 export * from './types.ts'

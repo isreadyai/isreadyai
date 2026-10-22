@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added a per-crawler table to the report that shows each AI crawler's robots.txt rule next to the server's actual response.
+
+### Changed
+
+- Probed the homepage as eight AI crawler user agents instead of GPTBot alone (score version 2026.10.1).
+
 ## [1.2.0] - 2026-10-08
 
 ### Added

@@ -1029,6 +1029,28 @@
       "good": "Good",
       "moderate": "Moderate",
       "poor": "Poor"
+    },
+    "crawlers": {
+      "title": "AI crawler access",
+      "intro": "What your robots.txt says to each AI crawler, and what your server actually returned when we requested your homepage as that crawler.",
+      "caption": "robots.txt rule and live server response for each AI crawler",
+      "silentSummary": "{count, plural, one {1 crawler is allowed by robots.txt but turned away by your server.} other {# crawlers are allowed by robots.txt but turned away by your server.}}",
+      "colCrawler": "Crawler",
+      "colPurpose": "Purpose",
+      "colRobots": "robots.txt",
+      "colServer": "Server response",
+      "purposeTraining": "Training",
+      "purposeSearch": "AI search",
+      "purposeUser": "Live fetch",
+      "robotsAllowed": "Allowed",
+      "robotsBlocked": "Blocked",
+      "robotsNone": "No robots.txt",
+      "serverServed": "Served",
+      "serverRefused": "Refused",
+      "serverChallenged": "Challenge page",
+      "serverNoResponse": "No response",
+      "serverUntested": "Not tested",
+      "silentBlock": "Silent block"
     }
   },
   "notFound": {

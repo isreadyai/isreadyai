@@ -6,6 +6,7 @@
 import type { TJsonObject } from '../../types.ts'
 import { ECategory, ELevel, EStatus, ECheckScope } from '../../types.ts'
 import { defineCheck, makeResult, type ICheckDef } from '../builder.ts'
+import { challengeSignal } from '../../util/challenge.ts'
 
 // MARK: - Anti-bot challenge detection
 
@@ -18,17 +19,6 @@ const def: ICheckDef = {
 }
 
 const DOCS = 'https://developers.cloudflare.com/bots/concepts/ai-crawl-control/'
-
-// Markers found ONLY in a real Cloudflare interstitial, never in normal page
-// content or the Turnstile widget. 'cf-turnstile' / 'challenges.cloudflare.com'
-// were removed — they match any page embedding Turnstile (e.g. a login form),
-// which is a legit control, not a crawler block.
-const CF_CHALLENGE_MARKERS = ['_cf_chl_opt', 'cf-browser-verification']
-
-// Interstitial page titles — matched against the <title> only, so legitimate
-// content that merely mentions "just a moment" interstitials in prose (like our
-// own marketing copy) doesn't trip the check.
-const CF_CHALLENGE_TITLES = ['just a moment', 'attention required! | cloudflare']
 
 const CF_FIX =
   'Allowlist verified AI crawlers via Cloudflare AI Crawl Control (or your WAF) so GPTBot, ClaudeBot, PerplexityBot et al. are not served a JS challenge.'
@@ -77,13 +67,11 @@ export const antiBotCheck = defineCheck(def, (ctx) => {
   // Cloudflare: a real interstitial carries a challenge marker, or its <title>
   // IS the challenge page. A normal 200 that merely mentions these phrases in
   // its content is served fine and is NOT a block.
-  const title = /<title[^>]*>([^<]*)<\/title>/.exec(body)?.[1]?.trim() ?? ''
-  const cfMarker = CF_CHALLENGE_MARKERS.find((sig) => body.includes(sig))
-  const cfTitle = CF_CHALLENGE_TITLES.find((sig) => title.includes(sig))
-  if (cfMarker !== undefined || cfTitle !== undefined) {
+  const cfSignal = challengeSignal(raw.body)
+  if (cfSignal !== null) {
     return fail(`A Cloudflare anti-bot interstitial was detected in the response. ${blockedNote}`, {
       vendor: 'Cloudflare',
-      signal: cfMarker ?? `title: ${cfTitle}`,
+      signal: cfSignal,
       status,
     })
   }
