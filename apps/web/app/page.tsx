@@ -1,7 +1,11 @@
 import { getTranslations } from 'next-intl/server'
 import { headers } from 'next/headers'
+import Link from 'next/link'
 import { AI_CRAWLERS, allChecks } from '@isreadyai/scanner'
 import { getPlanPrices } from '@/lib/plan-prices'
+import { CORPUS_MIN_SITES, loadCorpusStats } from '@/lib/scan-corpus'
+import { dayjs } from '@/lib/dayjs'
+import { GradeBands } from '@/components/grade-bands'
 import { ScanForm } from '@/components/scan-form'
 import { CliShowcase, HeroCommand } from '@/components/cli-showcase'
 import { FaqItem } from '@/components/faq-item'
@@ -9,6 +13,7 @@ import { GithubShowcase } from '@/components/github-showcase'
 import { SmartAgentShowcase } from '@/components/smart-agent-showcase'
 import { PremiumTiers } from '@/components/premium-tiers'
 import { ProductHuntBadge } from '@/components/product-hunt-badge'
+import { JsonLdScript } from '@/components/json-ld-script'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { ScoreWeightTable } from '@/components/score-weight-table'
@@ -25,9 +30,9 @@ import {
   SMART_CATEGORY_ORDER,
   SMART_SCORE_SOURCE_URL,
 } from '@/lib/check-category-docs'
-import { getScanStore } from '@/lib/scan-store.ts'
 import { parseMkt } from '@/lib/mkt'
-import { GITHUB_URL, SITE_NAME, SITE_URL } from '@/lib/site'
+import { organizationNode, websiteNode } from '@/lib/json-ld'
+import { SITE_URL } from '@/lib/site'
 
 // MARK: - Landing page (dogfood: SSG, semantic HTML, full JSON-LD)
 
@@ -44,12 +49,10 @@ export default async function HomePage({
 
   const mkt = parseMkt((await searchParams).mkt)
 
-  const store = await getScanStore()
-  const checksPerformed = (await store.countCompletedScans()) * allChecks.length
-
-  // Localised plan prices in the reader's currency (Stripe currency_options);
-  // null when Stripe isn't configured, so the table simply omits the amount.
-  const prices = await getPlanPrices((await headers()).get('x-vercel-ip-country'))
+  const [corpus, prices] = await Promise.all([
+    loadCorpusStats(),
+    getPlanPrices((await headers()).get('x-vercel-ip-country')),
+  ])
 
   const faqEntries = [9, 10, 11, 7, 1, 2, 3, 4, 5, 6, 8].map((i) => ({
     question: t(`faq.q${i}`),
@@ -92,7 +95,7 @@ export default async function HomePage({
 
   const steps = [1, 2, 3].map((i) => ({
     title: t(`how.step${i}Title`),
-    body: t(`how.step${i}Body`),
+    body: t(`how.step${i}Body`, { count: allChecks.length }),
   }))
 
   const checkGroups = [
@@ -133,13 +136,42 @@ export default async function HomePage({
         <section aria-label="Key numbers" className="border-site-border/60 border-y">
           <RevealOnScroll
             staggerChildren
-            className="site-container grid grid-cols-2 gap-x-4 gap-y-6 py-8 text-center sm:grid-cols-4 sm:gap-6"
+            className="site-container grid grid-cols-2 gap-x-4 gap-y-6 py-8 text-center sm:grid-cols-3 sm:gap-6"
           >
-            <StatCounter value={checksPerformed} label={t('stats.performed')} />
+            {corpus !== null ? (
+              <>
+                <StatCounter value={corpus.sites} label={t('stats.sites')} />
+                <StatCounter
+                  value={Math.round(
+                    (100 * (corpus.sites - corpus.grades.excellent)) / corpus.sites,
+                  )}
+                  suffix="%"
+                  label={t('stats.notExcellent')}
+                />
+                {corpus.uaRefused.sites >= CORPUS_MIN_SITES ? (
+                  <StatCounter
+                    value={Math.round((100 * corpus.uaRefused.refused) / corpus.uaRefused.sites)}
+                    suffix="%"
+                    label={t('stats.uaRefused')}
+                  />
+                ) : null}
+              </>
+            ) : null}
             <StatCounter value={allChecks.length} label={t('stats.checks')} />
             <StatCounter value={AI_CRAWLERS.length} label={t('stats.crawlers')} />
             <StatCounter value={5} prefix="~" suffix="s" label={t('stats.seconds')} />
           </RevealOnScroll>
+          {corpus !== null ? (
+            <p className="text-site-faint site-container pb-6 text-center font-mono text-xs">
+              {t('stats.footnote', {
+                from: dayjs(corpus.from).format('MMM D, YYYY'),
+                to: dayjs(corpus.to).format('MMM D, YYYY'),
+              })}{' '}
+              <Link href="/research" className="text-site-accent hover:underline">
+                {t('stats.methods')}
+              </Link>
+            </p>
+          ) : null}
         </section>
 
         <section id="readers" className="border-site-border/60 scroll-mt-20 border-b">
@@ -343,6 +375,9 @@ export default async function HomePage({
             <RevealOnScroll className="mt-10">
               <ScoreWeightTable />
             </RevealOnScroll>
+            <RevealOnScroll className="mt-10">
+              <GradeBands grades={corpus?.grades ?? null} sites={corpus?.sites ?? null} />
+            </RevealOnScroll>
           </div>
         </section>
 
@@ -380,7 +415,7 @@ export default async function HomePage({
                   — {t('why.quoteSource')}
                 </cite>
               </blockquote>
-              <p>{t('why.p3')}</p>
+              <p>{t('why.p3', { count: allChecks.length })}</p>
               <p className="text-site-faint text-sm">
                 {t('why.sourcesLabel')}:{' '}
                 <a
@@ -590,23 +625,8 @@ function JsonLd({ faq }: { faq: { question: string; answer: string }[] }) {
   const graph = {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'Organization',
-        '@id': `${SITE_URL}/#org`,
-        name: SITE_NAME,
-        url: SITE_URL,
-        logo: `${SITE_URL}/icon.svg`,
-        sameAs: [GITHUB_URL],
-      },
-      {
-        '@type': 'WebSite',
-        '@id': `${SITE_URL}/#website`,
-        name: SITE_NAME,
-        url: SITE_URL,
-        publisher: { '@id': `${SITE_URL}/#org` },
-        datePublished: '2026-06-15',
-        dateModified: new Date().toISOString(),
-      },
+      organizationNode(),
+      websiteNode(),
       {
         '@type': 'SoftwareApplication',
         name: 'isready.ai — AI readiness scanner',
@@ -626,11 +646,5 @@ function JsonLd({ faq }: { faq: { question: string; answer: string }[] }) {
       },
     ],
   }
-  return (
-    <script
-      type="application/ld+json"
-      // eslint-disable-next-line react/no-danger -- static, server-built JSON
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }}
-    />
-  )
+  return <JsonLdScript data={graph} />
 }

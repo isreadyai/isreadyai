@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import {
   CATEGORY_WEIGHTS,
+  GRADE_THRESHOLDS,
   aiSearchTrackScore,
   gradeOf,
   overallScore,
+  pointsToNextGrade,
   readinessHeadlineScore,
   scoreCategories,
 } from './score.ts'
@@ -183,5 +185,88 @@ describe('gradeOf', () => {
     expect(gradeOf(100)).toBe(EGrade.EXCELLENT)
     expect(gradeOf(150)).toBe(EGrade.EXCELLENT)
     expect(gradeOf(-5)).toBe(EGrade.POOR)
+  })
+})
+
+// MARK: - pointsToNextGrade
+
+function withChecks(
+  category: TCategory,
+  checks: { id: string; score: number; weight: number }[],
+): ICategoryScore {
+  return {
+    ...cat(category, 0, CATEGORY_WEIGHTS[category]),
+    checks: checks.map((c) => ({ ...check(category, c.score, c.weight), id: c.id, title: c.id })),
+  }
+}
+
+describe('GRADE_THRESHOLDS', () => {
+  test('drive gradeOf at every boundary', () => {
+    expect(gradeOf(GRADE_THRESHOLDS.excellent)).toBe(EGrade.EXCELLENT)
+    expect(gradeOf(GRADE_THRESHOLDS.excellent - 1)).toBe(EGrade.GOOD)
+    expect(gradeOf(GRADE_THRESHOLDS.good)).toBe(EGrade.GOOD)
+    expect(gradeOf(GRADE_THRESHOLDS.good - 1)).toBe(EGrade.MODERATE)
+    expect(gradeOf(GRADE_THRESHOLDS.moderate)).toBe(EGrade.MODERATE)
+    expect(gradeOf(GRADE_THRESHOLDS.moderate - 1)).toBe(EGrade.POOR)
+    expect([89, 90, 74, 75, 49, 50].map(gradeOf)).toEqual([
+      EGrade.GOOD,
+      EGrade.EXCELLENT,
+      EGrade.MODERATE,
+      EGrade.GOOD,
+      EGrade.POOR,
+      EGrade.MODERATE,
+    ])
+  })
+})
+
+describe('pointsToNextGrade', () => {
+  const categories = [
+    withChecks(ECategory.CRAWLER_ACCESS, [
+      { id: 'a', score: 0, weight: 1 },
+      { id: 'b', score: 1, weight: 1 },
+    ]),
+    withChecks(ECategory.TRUST, [
+      { id: 'c', score: 0, weight: 1 },
+      { id: 'info', score: 0, weight: 0 },
+    ]),
+  ]
+
+  test('returns null for an excellent score', () => {
+    expect(pointsToNextGrade(categories, 90)).toBeNull()
+    expect(pointsToNextGrade(categories, 100)).toBeNull()
+  })
+
+  test('reports the gap to the next grade', () => {
+    expect(pointsToNextGrade(categories, 80)?.next).toBe(EGrade.EXCELLENT)
+    expect(pointsToNextGrade(categories, 80)?.gap).toBe(10)
+    expect(pointsToNextGrade(categories, 60)?.gap).toBe(15)
+    expect(pointsToNextGrade(categories, 10)?.next).toBe(EGrade.MODERATE)
+  })
+
+  test('orders checks by recoverable points with one-decimal rounding', () => {
+    const result = pointsToNextGrade(categories, 80)
+    expect(result?.checks.map((c) => c.id)).toEqual(['a', 'c'])
+    expect(result?.checks.map((c) => c.points)).toEqual([12.5, 10])
+  })
+
+  test('never lists zero-weight or fully passing checks', () => {
+    const ids = pointsToNextGrade(categories, 80)?.checks.map((c) => c.id) ?? []
+    expect(ids).not.toContain('info')
+    expect(ids).not.toContain('b')
+  })
+
+  test('a fully passing category contributes nothing', () => {
+    const passing = [withChecks(ECategory.TRUST, [{ id: 'ok', score: 1, weight: 1 }])]
+    expect(pointsToNextGrade(passing, 80)?.checks).toEqual([])
+  })
+
+  test('keeps at most three checks', () => {
+    const many = [
+      withChecks(
+        ECategory.GEO_CONTENT,
+        ['a', 'b', 'c', 'd'].map((id) => ({ id, score: 0, weight: 1 })),
+      ),
+    ]
+    expect(pointsToNextGrade(many, 80)?.checks).toHaveLength(3)
   })
 })

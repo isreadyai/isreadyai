@@ -50,6 +50,8 @@ export interface IAiCrawler {
   surface: string
   /** Documentation URL describing the crawler. */
   docsUrl: TUrl
+  /** Full user-agent string sent when probing the server as this crawler. */
+  probeUserAgent?: string
 }
 
 /**
@@ -75,6 +77,8 @@ export const AI_CRAWLERS: readonly IAiCrawler[] = [
     purpose: 'training',
     surface: 'OpenAI model training',
     docsUrl: 'https://platform.openai.com/docs/bots',
+    probeUserAgent:
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.4; +https://openai.com/gptbot',
   },
   {
     token: 'OAI-SearchBot',
@@ -82,6 +86,8 @@ export const AI_CRAWLERS: readonly IAiCrawler[] = [
     purpose: 'search',
     surface: 'ChatGPT Search',
     docsUrl: 'https://platform.openai.com/docs/bots',
+    probeUserAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36; compatible; OAI-SearchBot/1.4; +https://openai.com/searchbot',
   },
   {
     token: 'ChatGPT-User',
@@ -89,14 +95,19 @@ export const AI_CRAWLERS: readonly IAiCrawler[] = [
     purpose: 'user',
     surface: 'ChatGPT live browsing',
     docsUrl: 'https://platform.openai.com/docs/bots',
+    probeUserAgent:
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot',
   },
   // Anthropic
+  // Anthropic publishes robots tokens only, so the Claude probes use the conventional compatible-token form.
   {
     token: 'ClaudeBot',
     operator: 'Anthropic',
     purpose: 'training',
     surface: 'Claude model training',
     docsUrl: 'https://support.anthropic.com/en/articles/8896518',
+    probeUserAgent:
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +https://support.claude.com/en/articles/8896518)',
   },
   {
     token: 'Claude-SearchBot',
@@ -104,6 +115,8 @@ export const AI_CRAWLERS: readonly IAiCrawler[] = [
     purpose: 'search',
     surface: 'Claude search',
     docsUrl: 'https://support.anthropic.com/en/articles/8896518',
+    probeUserAgent:
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +https://support.claude.com/en/articles/8896518)',
   },
   {
     token: 'Claude-User',
@@ -111,6 +124,8 @@ export const AI_CRAWLERS: readonly IAiCrawler[] = [
     purpose: 'user',
     surface: 'Claude live fetch',
     docsUrl: 'https://support.anthropic.com/en/articles/8896518',
+    probeUserAgent:
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +https://support.claude.com/en/articles/8896518)',
   },
   // Google
   {
@@ -134,6 +149,8 @@ export const AI_CRAWLERS: readonly IAiCrawler[] = [
     purpose: 'search',
     surface: 'Perplexity answers',
     docsUrl: 'https://docs.perplexity.ai/guides/bots',
+    probeUserAgent:
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)',
   },
   {
     token: 'Perplexity-User',
@@ -141,6 +158,8 @@ export const AI_CRAWLERS: readonly IAiCrawler[] = [
     purpose: 'user',
     surface: 'Perplexity live fetch',
     docsUrl: 'https://docs.perplexity.ai/guides/bots',
+    probeUserAgent:
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity-User/1.0; +https://perplexity.ai/perplexity-user)',
   },
   // Apple
   {
@@ -230,6 +249,23 @@ export const AI_CRAWLERS: readonly IAiCrawler[] = [
     docsUrl: 'https://github.com/ai-robots-txt/ai.robots.txt',
   },
 ] as const
+
+/**
+ * An AI crawler that carries a probe user-agent string.
+ *
+ * @export
+ * @typedef {TProbedCrawler}
+ */
+export type TProbedCrawler = IAiCrawler & { probeUserAgent: string }
+
+/**
+ * Crawlers the scanner probes the server as, in registry order.
+ *
+ * @export
+ */
+export const PROBED_CRAWLERS: readonly TProbedCrawler[] = AI_CRAWLERS.filter(
+  (crawler): crawler is TProbedCrawler => crawler.probeUserAgent !== undefined,
+)
 
 // xAI/Grok absent: no official crawler tokens, retrieval reportedly uses spoofed browser UAs.
 

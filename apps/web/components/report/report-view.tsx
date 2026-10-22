@@ -8,7 +8,13 @@ import type {
 } from '@isreadyai/scanner'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { aggregateSiteFindings, ECategory, gradeOf } from '@isreadyai/scanner'
+import {
+  aggregateSiteFindings,
+  crawlerAccessRows,
+  ECategory,
+  gradeOf,
+  pointsToNextGrade,
+} from '@isreadyai/scanner'
 import { aiSearchScore, combinedScore, deepTrackScore, smartTrackScore } from '@/lib/score'
 import { deepScanLimit } from '@/lib/deep-scan'
 import { recallScanWriteToken, rememberScanWriteToken } from '@/lib/scan-write-token-client'
@@ -34,6 +40,7 @@ import { SmartAgentDeepSection } from './smart-agent-deep-section'
 import { PremiumTiers, type ITierPrices } from '@/components/premium-tiers'
 import { dayjs } from '@/lib/dayjs'
 import { AiSearchSection } from './ai-search-section'
+import { CrawlerAccessTable } from './crawler-access-table'
 import { SmartAgentSection } from './smart-agent-section'
 import { SolutionSection } from './solution-section'
 import { AskYourSite } from './ask-your-site'
@@ -418,6 +425,7 @@ export function ReportView({
   // MARK: - Report
   const report = record.report
   const allPages = site === null ? [report] : [site.primary, ...site.pages]
+  const crawlerRows = crawlerAccessRows(report.checks)
   const failing = report.checks.filter((c) => c.status === 'fail')
   const warning = report.checks.filter((c) => c.status === 'warn')
   // Smart Agent signals render in the SAME findings list, via the SAME FindingItem
@@ -437,6 +445,7 @@ export function ReportView({
   // Derive the grade from the SHOWN score so the ring/label colour always matches.
   const grade = gradeOf(overall)
   const categories = site?.categories ?? report.categories
+  const nextGrade = site === null ? pointsToNextGrade(categories, report.overall) : null
 
   // A persisted dashboard scan opened from history is read-only: running deep /
   // smart-deep would mutate the saved record. The fresh-scan flow arrives with
@@ -647,8 +656,11 @@ export function ReportView({
         score={aiSearchScore({ base: report.overall, deep: deepScore })}
         categories={categories}
         deep={site !== null}
+        nextGrade={nextGrade}
         pending={deepPending}
       />
+
+      {crawlerRows !== null ? <CrawlerAccessTable rows={crawlerRows} /> : null}
 
       <SmartAgentSection
         status={record.smartStatus}

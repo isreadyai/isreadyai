@@ -97,4 +97,59 @@ describe('reportToMarkdown', () => {
     const md = reportToMarkdown(clean, 'llm')
     expect(md).toContain('already AI-ready')
   })
+
+  test('both modes: crawler access table with a silent block marker', () => {
+    const withTable: IScanReport = {
+      ...REPORT,
+      checks: [
+        ...REPORT.checks,
+        {
+          id: 'crawler.robots.ai-bots',
+          category: 'crawler_access',
+          status: 'pass',
+          score: 1,
+          weight: 5,
+          title: 'AI crawlers are allowed in robots.txt',
+          detail: 'ok',
+          evidence: {
+            crawlers: [
+              {
+                token: 'ClaudeBot',
+                operator: 'Anthropic',
+                purpose: 'training',
+                surface: 'Claude model training',
+                blocked: false,
+              },
+            ],
+          },
+        },
+        {
+          id: 'crawler.ua-blocking',
+          category: 'crawler_access',
+          status: 'warn',
+          score: 0.5,
+          weight: 3,
+          title: 'Server responds equally to AI user-agents',
+          detail: 'x',
+          evidence: {
+            normalStatus: 200,
+            probes: [{ token: 'ClaudeBot', status: 403, outcome: 'refused' }],
+          },
+        },
+      ],
+    }
+    for (const mode of ['human', 'llm'] as const) {
+      const md = reportToMarkdown(withTable, mode)
+      expect(md).toContain('## AI crawler access')
+      expect(md).toContain('| Crawler | Operator | Purpose | robots.txt | Server response |')
+      expect(md).toContain(
+        '| ClaudeBot | Anthropic | training | allowed | refused (HTTP 403) ▲ silent block |',
+      )
+    }
+  })
+
+  test('crawler access section is absent without the robots check', () => {
+    expect(reportToMarkdown(REPORT, 'human')).not.toContain('## AI crawler access')
+    expect(reportToMarkdown(REPORT, 'llm')).not.toContain('## AI crawler access')
+  })
 })
