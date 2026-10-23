@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -74,7 +74,7 @@ jobs:
   # the pgTAP suite (RLS policies, grants, triggers) against it. Kept as its own
   # job because `supabase start` needs Docker and is heavier than the unit pass.
   supabase:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     # config.toml enables the OAuth providers for local development. CI does not
     # exercise their external redirects, but explicit inert values keep config
